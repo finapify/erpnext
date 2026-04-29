@@ -1,0 +1,113 @@
+<odoo>
+    <record id="res_config_settings_view_form_finapify" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.finapify</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('settings') ]" position="inside">
+                <div class="app_settings_block" data-string="Finapify" string="Finapify">
+                    <h2>Finapify Payments</h2>
+                    
+                    <!-- n8n Webhook Configuration -->
+                    <h3>n8n Webhook Configuration</h3>
+                    <div class="row mt16 o_settings_container">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label for="finapify_n8n_url"/>
+                                <div class="text-muted">n8n webhook URL used to initiate payments.</div>
+                                <field name="finapify_n8n_url"/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label for="finapify_callback_secret"/>
+                                <div class="text-muted">Shared secret for callback signature verification (HMAC-SHA256).</div>
+                                <field name="finapify_callback_secret" password="True"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Finapify API Configuration -->
+                    <h3 class="mt32">Finapify API Configuration</h3>
+                    <div class="row mt16 o_settings_container">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label for="finapify_api_url"/>
+                                <div class="text-muted">Base URL for Finapify API endpoint.</div>
+                                <field name="finapify_api_url"/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label for="finapify_api_key"/>
+                                <div class="text-muted">Your Finapify API key for authentication.</div>
+                                <field name="finapify_api_key"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt16 o_settings_container">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label for="finapify_api_secret"/>
+                                <div class="text-muted">Your Finapify API secret (keep this secure).</div>
+                                <field name="finapify_api_secret" password="True"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Authentication Status Section -->
+                    <h3 class="mt32">Authentication Status</h3>
+                    <div class="row mt16 o_settings_container">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label for="finapify_is_authenticated"/>
+                                <div class="text-muted">Current API authentication status.</div>
+                                <div class="row mt8">
+                                    <div class="col-6">
+                                        <field name="finapify_is_authenticated" readonly="1" widget="boolean"/>
+                                    </div>
+                                    <div class="col-6">
+                                        <button name="test_finapify_authentication" type="object" class="btn btn-primary" string="Test Authentication"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label for="finapify_last_auth_at"/>
+                                <div class="text-muted">Timestamp of last successful authentication.</div>
+                                <field name="finapify_last_auth_at" readonly="1"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Authentication Error (if any) -->
+                    <div class="row mt16 o_settings_container" attrs="{'invisible': [('finapify_auth_error', '=', '')]}">
+                        <div class="col-12 o_setting_box">
+                            <div class="alert alert-danger" role="alert">
+                                <strong>Authentication Error:</strong>
+                                <field name="finapify_auth_error" readonly="1" widget="text"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Box -->
+                    <div class="row mt24">
+                        <div class="col-12">
+                            <div class="alert alert-info" role="alert">
+                                <i class="fa fa-info-circle"/> <strong>Important:</strong>
+                                <ul class="mb-0 mt8">
+                                    <li>Enter your Finapify API key and secret to enable payment processing.</li>
+                                    <li>Click "Test Authentication" to verify your credentials.</li>
+                                    <li>Only after successful authentication can payment requests be processed.</li>
+                                    <li>Keep your API secret secure and never share it.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

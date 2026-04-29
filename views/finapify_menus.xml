@@ -1,0 +1,13 @@
+<odoo>
+    <menuitem id="finapify_root" name="Finapify Payments" parent="account.menu_finance" sequence="60"/>
+
+    <menuitem id="finapify_menu_dashboard" name="Dashboard" parent="finapify_root" action="action_finapify_dashboard" sequence="1"/>
+    <menuitem id="finapify_menu_connection" name="Finapify Connection" parent="finapify_root" action="action_finapify_connection" sequence="10"/>
+    <menuitem id="finapify_menu_vendor_map" name="Vendor Bank Mapping" parent="finapify_root" action="action_finapify_vendor_bank_map" sequence="20"/>
+    <menuitem id="finapify_menu_journal_map" name="Journal Mapping" parent="finapify_root" action="action_finapify_journal_map" sequence="30"/>
+    <menuitem id="finapify_menu_requests" name="Payment Requests" parent="finapify_root" action="action_finapify_payment_request" sequence="40"/>
+    <menuitem id="finapify_menu_batches" name="Payment Batches" parent="finapify_root" action="action_finapify_payment_batch" sequence="50"/>
+    <menuitem id="finapify_menu_bank_statement" name="Bank Statements" parent="finapify_root" action="action_finapify_bank_statement" sequence="55"/>
+    <menuitem id="finapify_menu_recon" name="Reconciliation Center" parent="finapify_root" action="action_finapify_reconciliation" sequence="60"/>
+    <menuitem id="finapify_menu_logs" name="Logs / Audit" parent="finapify_root" action="action_finapify_log" sequence="70" groups="account.group_account_manager"/>
+</odoo>

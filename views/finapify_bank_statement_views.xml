@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Finapify Bank Statement Action -->
+    <record id="action_finapify_bank_statement" model="ir.actions.act_window">
+        <field name="name">Bank Statements</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">finapify.bank.statement</field>
+        <field name="view_mode">tree,form</field>
+        <field name="views">[(False, 'tree'), (False, 'form')]</field>
+    </record>
+
+    <!-- Bank Statement Tree View -->
+    <record id="finapify_bank_statement_view_tree" model="ir.ui.view">
+        <field name="name">finapify.bank.statement.tree</field>
+        <field name="model">finapify.bank.statement</field>
+        <field name="arch" type="xml">
+            <tree string="Bank Statements" decoration-info="state == 'draft'" decoration-warning="state == 'fetching'" decoration-success="state == 'loaded'" decoration-danger="state == 'failed'">
+                <field name="name"/>
+                <field name="bank_name"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="total_transactions"/>
+                <field name="total_debit"/>
+                <field name="total_credit"/>
+                <field name="state"/>
+                <field name="created_at"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Bank Statement Form View -->
+    <record id="finapify_bank_statement_view_form" model="ir.ui.view">
+        <field name="name">finapify.bank.statement.form</field>
+        <field name="model">finapify.bank.statement</field>
+        <field name="arch" type="xml">
+            <form string="Bank Statement">
+                <header>
+                    <button name="fetch_bank_statement" type="object" string="Fetch Statement" class="btn-primary" attrs="{'invisible': [('state', '!=', 'draft')]}"/>
+                    <button name="action_reload_statement" type="object" string="Reload" class="btn-secondary" attrs="{'invisible': [('state', 'not in', ['loaded', 'failed'])]}"/>
+                    <button name="action_set_draft" type="object" string="Reset to Draft" class="btn-warning" attrs="{'invisible': [('state', 'not in', ['loaded', 'failed'])]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,loaded,failed"/>
+                </header>
+                
+                <sheet>
+                    <div class="alert alert-info" role="alert" attrs="{'invisible': [('state', '!=', 'failed')]}">
+                        <strong>Error:</strong>
+                        <field name="error_message" readonly="1"/>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Statement Parameters">
+                            <field name="bank_id" widget="selection"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group string="Status &amp; Metadata">
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="fetched_at" readonly="1" attrs="{'invisible': [('state', '=', 'draft')]}"/>
+                            <field name="currency_id" groups="base.group_multi_currency"/>
+                        </group>
+                    </group>
+
+                    <!-- Statistics -->
+                    <group string="Statement Summary" attrs="{'invisible': [('state', '=', 'draft')]}">
+                        <group>
+                            <field name="total_transactions" readonly="1"/>
+                            <field name="total_debit" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="total_credit" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Transactions -->
+                    <notebook>
+                        <page string="Transactions" name="transactions">
+                            <field name="line_ids" readonly="1" mode="tree">
+                                <tree string="Bank Statement Transactions" decoration-info="reconciliation_status == 'unmatched'" decoration-warning="reconciliation_status == 'matched'" decoration-success="reconciliation_status == 'reconciled'" create="0" delete="0">
+                                    <field name="transaction_date"/>
+                                    <field name="description"/>
+                                    <field name="reference"/>
+                                    <field name="transaction_type"/>
+                                    <field name="amount" sum="Total Amount"/>
+                                    <field name="balance"/>
+                                    <field name="counterparty_name"/>
+                                    <field name="reconciliation_status"/>
+                                </tree>
+                            </field>
+                        </page>
+                        
+                        <page string="API Response" name="api_response" attrs="{'invisible': [('response_json', '=', False)]}">
+                            <field name="response_json" readonly="1" widget="ace" options="{'mode': 'json'}" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Bank Statement Line Form View -->
+    <record id="finapify_bank_statement_line_view_form" model="ir.ui.view">
+        <field name="name">finapify.bank.statement.line.form</field>
+        <field name="model">finapify.bank.statement.line</field>
+        <field name="arch" type="xml">
+            <form string="Bank Statement Transaction">
+                <header>
+                    <button name="action_match_payment" type="object" string="Match Payment" class="btn-primary"/>
+                    <field name="reconciliation_status" widget="statusbar" statusbar_visible="unmatched,matched,reconciled"/>
+                </header>
+                
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="transaction_date" readonly="1"/>
+                            <field name="description" readonly="1"/>
+                            <field name="reference" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="transaction_type" readonly="1"/>
+                            <field name="amount" readonly="1"/>
+                            <field name="balance" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Counterparty Information">
+                        <field name="counterparty_name" readonly="1"/>
+                        <field name="counterparty_account" readonly="1"/>
+                    </group>
+
+                    <group string="Reconciliation">
+                        <field name="matched_payment_id" readonly="1"/>
+                        <field name="reconciliation_status" readonly="1"/>
+                    </group>
+
+                    <group string="Raw Data">
+                        <field name="raw_json" readonly="1" widget="text" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Bank Statement Line Tree View -->
+    <record id="finapify_bank_statement_line_view_tree" model="ir.ui.view">
+        <field name="name">finapify.bank.statement.line.tree</field>
+        <field name="model">finapify.bank.statement.line</field>
+        <field name="arch" type="xml">
+            <tree string="Bank Statement Transactions" decoration-info="reconciliation_status == 'unmatched'" decoration-warning="reconciliation_status == 'matched'" decoration-success="reconciliation_status == 'reconciled'">
+                <field name="transaction_date"/>
+                <field name="description"/>
+                <field name="reference"/>
+                <field name="transaction_type"/>
+                <field name="amount"/>
+                <field name="balance"/>
+                <field name="counterparty_name"/>
+                <field name="reconciliation_status"/>
+            </tree>
+        </field>
+    </record>
+
+</odoo>

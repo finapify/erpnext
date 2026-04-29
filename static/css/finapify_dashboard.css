@@ -1,0 +1,346 @@
+/* Finapify Dashboard Styles */
+
+.o_dashboard_container {
+    padding: 20px;
+    background-color: #f8f9fa;
+}
+
+.o_dashboard_header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e9ecef;
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.o_dashboard_header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    margin-top: 0;
+}
+
+.o_dashboard_header p {
+    font-size: 16px;
+    color: #7f8c8d;
+    margin: 0;
+}
+
+.o_section_title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 15px;
+    margin-top: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #3498db;
+    display: inline-block;
+}
+
+.dashboard-card {
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background: white;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-card:hover {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    border-color: #3498db;
+    transform: translateY(-2px);
+}
+
+.dashboard-card .card-body {
+    padding: 25px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.dashboard-card .card-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 15px 0;
+}
+
+.dashboard-card .card-title a {
+    text-decoration: none;
+    color: #2c3e50;
+    transition: color 0.2s;
+}
+
+.dashboard-card .card-title a:hover {
+    color: #3498db;
+}
+
+.dashboard-card .card-text {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin: 10px 0;
+}
+
+.dashboard-card .card-footer {
+    background: #f8f9fa;
+    padding: 15px;
+    border-top: 1px solid #e9ecef;
+}
+
+.dashboard-card .btn {
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.dashboard-card .btn:hover {
+    transform: translateX(2px);
+}
+
+/* Stats Cards */
+.card.bg-light {
+    background-color: #f8f9fa !important;
+    border: 1px solid #e9ecef;
+}
+
+.border-left-primary {
+    border-left: 4px solid #3498db;
+}
+
+.border-left-warning {
+    border-left: 4px solid #f39c12;
+}
+
+.border-left-success {
+    border-left: 4px solid #27ae60;
+}
+
+.text-xs {
+    font-size: 12px;
+}
+
+.text-primary { 
+    color: #3498db; 
+}
+
+.text-warning { 
+    color: #f39c12; 
+}
+
+.text-success { 
+    color: #27ae60; 
+}
+
+.text-info { 
+    color: #1abc9c; 
+}
+
+.text-danger { 
+    color: #e74c3c; 
+}
+
+.text-secondary { 
+    color: #95a5a6; 
+}
+
+.text-dark { 
+    color: #2c3e50; 
+}
+
+.text-muted { 
+    color: #7f8c8d; 
+}
+
+.font-weight-bold {
+    font-weight: 700;
+}
+
+.text-uppercase {
+    text-transform: uppercase;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* Alert Styles */
+.alert {
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+.alert-info strong {
+    font-weight: 700;
+}
+
+.alert-info ul {
+    margin-left: 20px;
+    margin-top: 10px;
+}
+
+.alert-info li {
+    margin-bottom: 5px;
+}
+
+/* Icon Styles */
+.fa-dashboard:before,
+.fa-link:before,
+.fa-paper-plane:before,
+.fa-credit-card:before,
+.fa-building:before,
+.fa-book:before,
+.fa-balance-scale:before,
+.fa-history:before,
+.fa-cog:before {
+    margin-right: 8px;
+}
+
+/* Responsive Layout */
+@media (max-width: 768px) {
+    .o_dashboard_header h1 {
+        font-size: 24px;
+    }
+    
+    .o_section_title {
+        font-size: 16px;
+    }
+    
+    .dashboard-card .card-body {
+        padding: 15px;
+    }
+    
+    .col-md-6 {
+        flex: 0 0 100%;
+    }
+}
+
+/* Help section icon */
+.alert i {
+    margin-right: 10px;
+}
+
+/* Utility classes */
+.mb-0 {
+    margin-bottom: 0;
+}
+
+.mb-3 {
+    margin-bottom: 1rem;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+
+.mt-3 {
+    margin-top: 1rem;
+}
+
+.mt-4 {
+    margin-top: 1.5rem;
+}
+
+.mt-5 {
+    margin-top: 3rem;
+}
+
+.pt-4 {
+    padding-top: 1.5rem;
+}
+
+.p-4 {
+    padding: 1.5rem;
+}
+
+.p-0 {
+    padding: 0;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -12px;
+    margin-left: -12px;
+}
+
+.col-12 {
+    flex: 0 0 100%;
+    padding-right: 12px;
+    padding-left: 12px;
+}
+
+.col-md-4 {
+    flex: 0 0 33.333%;
+    padding-right: 12px;
+    padding-left: 12px;
+}
+
+.col-md-6 {
+    flex: 0 0 50%;
+    padding-right: 12px;
+    padding-left: 12px;
+}
+
+.col-lg-4 {
+    flex: 0 0 33.333%;
+    padding-right: 12px;
+    padding-left: 12px;
+}
+
+@media (max-width: 991px) {
+    .col-lg-4 {
+        flex: 0 0 50%;
+    }
+}
+
+@media (max-width: 768px) {
+    .col-md-4,
+    .col-md-6,
+    .col-lg-4 {
+        flex: 0 0 100%;
+    }
+}
+
+.col-auto {
+    flex: 0 0 auto;
+    width: auto;
+    padding-right: 12px;
+    padding-left: 12px;
+}
+
+.col {
+    flex-basis: 0;
+    flex-grow: 1;
+    padding-right: 12px;
+    padding-left: 12px;
+}
+
+/* Border utilities */
+.border-top {
+    border-top: 1px solid #e9ecef;
+}
+
+/* Background utilities */
+.bg-light {
+    background-color: #f8f9fa;
+}
+
+.h3 {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+}

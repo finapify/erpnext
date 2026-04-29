@@ -1,0 +1,9 @@
+<odoo>
+    <record id="action_finapify_reconciliation" model="ir.actions.act_window">
+        <field name="name">Reconciliation Center</field>
+        <field name="res_model">finapify.payment.request</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[("status","=","success"),("reconciliation_status","!=","reconciled")]</field>
+        <field name="context">{"search_default_success": 1}</field>
+    </record>
+</odoo>

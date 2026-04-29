@@ -1,0 +1,25 @@
+<odoo>
+    <record id="seq_finapify_payment_request" model="ir.sequence">
+        <field name="name">Finapify Payment Request</field>
+        <field name="code">finapify.payment.request</field>
+        <field name="prefix">FPR/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_finapify_payment_batch" model="ir.sequence">
+        <field name="name">Finapify Payment Batch</field>
+        <field name="code">finapify.payment.batch</field>
+        <field name="prefix">FPB/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_finapify_bank_statement" model="ir.sequence">
+        <field name="name">Finapify Bank Statement</field>
+        <field name="code">finapify.bank.statement</field>
+        <field name="prefix">FBS/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

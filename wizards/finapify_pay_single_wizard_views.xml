@@ -1,0 +1,31 @@
+<odoo>
+    <record id="view_finapify_pay_single_wizard_form" model="ir.ui.view">
+        <field name="name">finapify.pay.single.wizard.form</field>
+        <field name="model">finapify.pay.single.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Pay with Finapify">
+                <sheet>
+                    <group>
+                        <field name="vendor_bill_id" readonly="1"/>
+                        <field name="amount"/>
+                        <field name="currency_id" readonly="1"/>
+                        <field name="source_bank_id"/>
+                        <field name="vendor_bank_id"/>
+                        <field name="otp" placeholder="Enter OTP"/>
+                    </group>
+                    <footer>
+                        <button string="Pay" type="object" name="action_pay" class="btn-primary"/>
+                        <button string="Cancel" special="cancel" class="btn-secondary"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_finapify_pay_single_wizard" model="ir.actions.act_window">
+        <field name="name">Pay with Finapify</field>
+        <field name="res_model">finapify.pay.single.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

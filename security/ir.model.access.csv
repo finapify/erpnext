@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_finapify_dashboard_user,finapify.dashboard user,model_finapify_dashboard,account.group_account_user,1,0,0,0
+access_finapify_connection_user,finapify.connection user,model_finapify_connection,account.group_account_user,1,1,1,0
+access_finapify_vendor_bank_map_user,finapify.vendor.bank.map user,model_finapify_vendor_bank_map,account.group_account_user,1,1,1,0
+access_finapify_journal_map_manager,finapify.journal.map manager,model_finapify_journal_map,account.group_account_manager,1,1,1,1
+access_finapify_payment_request_user,finapify.payment.request user,model_finapify_payment_request,account.group_account_user,1,1,1,0
+access_finapify_payment_batch_user,finapify.payment.batch user,model_finapify_payment_batch,account.group_account_user,1,1,1,0
+access_finapify_payment_batch_line_user,finapify.payment.batch.line user,model_finapify_payment_batch_line,account.group_account_user,1,1,1,0
+access_finapify_log_manager,finapify.log manager,model_finapify_log,account.group_account_manager,1,0,0,0
+access_finapify_txn_manager,finapify.txn manager,model_finapify_txn,account.group_account_manager,1,0,0,0
+access_finapify_job_manager,finapify.job manager,model_finapify_job,account.group_account_manager,1,1,1,1
+access_finapify_bank_statement_user,finapify.bank.statement user,model_finapify_bank_statement,account.group_account_user,1,1,1,1
+access_finapify_bank_statement_line_user,finapify.bank.statement.line user,model_finapify_bank_statement_line,account.group_account_user,1,1,1,1

@@ -1,0 +1,12 @@
+<odoo>
+    <record id="ir_cron_finapify_process_jobs" model="ir.cron">
+        <field name="name">Finapify: Process Jobs</field>
+        <field name="model_id" ref="model_finapify_job"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_process_jobs()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

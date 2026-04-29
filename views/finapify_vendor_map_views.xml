@@ -1,0 +1,38 @@
+<odoo>
+    <record id="view_finapify_vendor_bank_map_tree" model="ir.ui.view">
+        <field name="name">finapify.vendor.bank.map.tree</field>
+        <field name="model">finapify.vendor.bank.map</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="company_id"/>
+                <field name="partner_id"/>
+                <field name="finapify_vendor_bank_id"/>
+                <field name="verified"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_finapify_vendor_bank_map_form" model="ir.ui.view">
+        <field name="name">finapify.vendor.bank.map.form</field>
+        <field name="model">finapify.vendor.bank.map</field>
+        <field name="arch" type="xml">
+            <form string="Vendor Bank Mapping">
+                <sheet>
+                    <group>
+                        <field name="company_id"/>
+                        <field name="partner_id"/>
+                        <field name="finapify_vendor_bank_id"/>
+                        <field name="verified"/>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_finapify_vendor_bank_map" model="ir.actions.act_window">
+        <field name="name">Vendor Bank Mapping</field>
+        <field name="res_model">finapify.vendor.bank.map</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

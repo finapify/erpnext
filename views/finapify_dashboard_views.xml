@@ -1,0 +1,652 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Finapify Dashboard Action -->
+    <record id="action_finapify_dashboard" model="ir.actions.act_window">
+        <field name="name">Finapify Dashboard</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">finapify.dashboard</field>
+        <field name="view_mode">form</field>
+        <field name="views">[(False, 'form')]</field>
+        <field name="target">main</field>
+    </record>
+
+    <!-- Finapify Dashboard Form View -->
+    <record id="finapify_dashboard_view_form" model="ir.ui.view">
+        <field name="name">finapify.dashboard.form</field>
+        <field name="model">finapify.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Finapify Dashboard" create="false" edit="false" delete="false">
+                <link rel="stylesheet" href="/finapify_payments/static/css/finapify_dashboard.css"/>
+                <script type="text/javascript" src="/finapify_payments/static/js/finapify_dashboard.js"/>
+                
+                <div class="o_dashboard_container">
+                    <!-- Dashboard Header -->
+                    <div class="o_dashboard_header">
+                        <h1 class="o_page_title">
+                            <i class="fa fa-dashboard"/> Finapify Payment Hub
+                        </h1>
+                        <p class="text-muted">Manage your Finapify payment integrations and transactions</p>
+                    </div>
+
+                    <!-- Quick Stats Section -->
+                    <div class="row mt-4 mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-light border-left-primary">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-auto">
+                                            <i class="fa fa-link fa-2x text-primary"></i>
+                                        </div>
+                                        <div class="col">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Active Connections</div>
+                                            <div class="h3 mb-0"><span class="finapify-stat-connections">0</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light border-left-warning">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-auto">
+                                            <i class="fa fa-hourglass-half fa-2x text-warning"></i>
+                                        </div>
+                                        <div class="col">
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pending Requests</div>
+                                            <div class="h3 mb-0"><span class="finapify-stat-pending">0</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light border-left-success">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-auto">
+                                            <i class="fa fa-check-circle fa-2x text-success"></i>
+                                        </div>
+                                        <div class="col">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Completed Batches</div>
+                                            <div class="h3 mb-0"><span class="finapify-stat-completed">0</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Links Section -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h2 class="text-uppercase o_section_title">Quick Links</h2>
+                        </div>
+                    </div>
+
+                    <!-- Connection Management -->
+                    <div class="row mt-3">
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow" data-action="action_finapify_connection">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-link fa-3x text-primary mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" onclick="return false;">
+                                            Finapify Connection
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        Manage Finapify API connections and authentication
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-primary w-100" data-action="action_finapify_connection">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Requests -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow" data-action="action_finapify_payment_request">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-paper-plane fa-3x text-info mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" onclick="return false;">
+                                            Payment Requests
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        Create and manage individual payment requests
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-info w-100" data-action="action_finapify_payment_request">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Batches -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow" data-action="action_finapify_payment_batch">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-credit-card fa-3x text-success mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" onclick="return false;">
+                                            Payment Batches
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        Manage bulk payment batches and track progress
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-success w-100" data-action="action_finapify_payment_batch">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Section -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h2 class="text-uppercase o_section_title">Configuration</h2>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <!-- Vendor Bank Mapping -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow" data-action="action_finapify_vendor_bank_map">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-building fa-3x text-warning mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" onclick="return false;">
+                                            Vendor Bank Mapping
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        Map vendors to their bank accounts
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-warning w-100" data-action="action_finapify_vendor_bank_map">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Journal Mapping -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow" data-action="action_finapify_journal_map">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-book fa-3x text-danger mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" onclick="return false;">
+                                            Journal Mapping
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        Configure journal mapping from Finapify banks
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-danger w-100" data-action="action_finapify_journal_map">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reconciliation Center -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow" data-action="action_finapify_reconciliation">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-balance-scale fa-3x text-secondary mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" onclick="return false;">
+                                            Reconciliation Center
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        Reconcile payments with invoices
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-secondary w-100" data-action="action_finapify_reconciliation">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Audit &amp; Support Section -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h2 class="text-uppercase o_section_title">Audit &amp; Support</h2>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <!-- Logs &amp; Audit -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow" data-action="action_finapify_log">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-history fa-3x text-dark mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" onclick="return false;">
+                                            Logs &amp; Audit Trail
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        View system logs, audit trail, and debug information
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-dark w-100" data-action="action_finapify_log">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-cog fa-3x text-muted mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" onclick="return false;">
+                                            Settings
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        Configure Finapify API keys and webhooks
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-muted w-100" onclick="window.location.href='/web#action=base.action_res_config_settings';">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Help Section -->
+                    <div class="row mt-5 pt-4 border-top">
+                        <div class="col-12">
+                            <div class="alert alert-info" role="alert">
+                                <i class="fa fa-info-circle"/> <strong>Quick Tips:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Start by setting up your <strong>Finapify Connection</strong> with your API credentials</li>
+                                    <li>Configure <strong>Vendor Bank Mapping</strong> to match vendors with bank accounts</li>
+                                    <li>Set up <strong>Journal Mapping</strong> for proper accounting entries</li>
+                                    <li>Create <strong>Payment Requests</strong> or <strong>Payment Batches</strong> to initiate payments</li>
+                                    <li>Use <strong>Reconciliation Center</strong> to match payments with invoices</li>
+                                    <li>Check <strong>Logs &amp; Audit Trail</strong> for transaction history and debugging</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+</odoo>
+                    <!-- Dashboard Header -->
+                    <div class="o_dashboard_header">
+                        <h1 class="o_page_title">
+                            <i class="fa fa-dashboard"/> Finapify Payment Hub
+                        </h1>
+                        <p class="text-muted">Manage your Finapify payment integrations and transactions</p>
+                    </div>
+
+                    <!-- Quick Stats Section -->
+                    <div class="row mt-4 mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-light border-left-primary">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-auto">
+                                            <i class="fa fa-link fa-2x text-primary"></i>
+                                        </div>
+                                        <div class="col">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Active Connections</div>
+                                            <div class="h3 mb-0"><span class="finapify-stat-connections">0</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light border-left-warning">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-auto">
+                                            <i class="fa fa-hourglass-half fa-2x text-warning"></i>
+                                        </div>
+                                        <div class="col">
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pending Requests</div>
+                                            <div class="h3 mb-0"><span class="finapify-stat-pending">0</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light border-left-success">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-auto">
+                                            <i class="fa fa-check-circle fa-2x text-success"></i>
+                                        </div>
+                                        <div class="col">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Completed Batches</div>
+                                            <div class="h3 mb-0"><span class="finapify-stat-completed">0</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Links Section -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h2 class="text-uppercase o_section_title">Quick Links</h2>
+                        </div>
+                    </div>
+
+                    <!-- Connection Management -->
+                    <div class="row mt-3">
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-link fa-3x text-primary mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" data-action="action_finapify_connection">
+                                            Finapify Connection
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        Manage Finapify API connections and authentication
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-primary w-100" data-action="action_finapify_connection">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Requests -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-paper-plane fa-3x text-info mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" data-action="action_finapify_payment_request">
+                                            Payment Requests
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        Create and manage individual payment requests
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-info w-100" data-action="action_finapify_payment_request">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Batches -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-credit-card fa-3x text-success mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" data-action="action_finapify_payment_batch">
+                                            Payment Batches
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        Manage bulk payment batches and track progress
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-success w-100" data-action="action_finapify_payment_batch">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Section -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h2 class="text-uppercase o_section_title">Configuration</h2>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <!-- Vendor Bank Mapping -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-building fa-3x text-warning mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" data-action="action_finapify_vendor_bank_map">
+                                            Vendor Bank Mapping
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        Map vendors to their bank accounts
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-warning w-100" data-action="action_finapify_vendor_bank_map">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Journal Mapping -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-book fa-3x text-danger mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" data-action="action_finapify_journal_map">
+                                            Journal Mapping
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        Configure journal mapping from Finapify banks
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-danger w-100" data-action="action_finapify_journal_map">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reconciliation Center -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-balance-scale fa-3x text-secondary mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" data-action="action_finapify_reconciliation">
+                                            Reconciliation Center
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        Reconcile payments with invoices
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-secondary w-100" data-action="action_finapify_reconciliation">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Audit & Support Section -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h2 class="text-uppercase o_section_title">Audit &amp; Support</h2>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <!-- Logs & Audit -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-history fa-3x text-dark mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" data-action="action_finapify_log">
+                                            Logs &amp; Audit Trail
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        View system logs, audit trail, and debug information
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-dark w-100" data-action="action_finapify_log">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card dashboard-card hover-shadow">
+                                <div class="card-body p-4 text-center">
+                                    <i class="fa fa-cog fa-3x text-muted mb-3"></i>
+                                    <h5 class="card-title">
+                                        <a href="#" data-action="action_res_config_settings_finapify">
+                                            Settings
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        Configure Finapify API keys and webhooks
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <button class="btn btn-sm btn-muted w-100" onclick="window.location.href='/web#action=base_settings.action_base_settings';">
+                                        <i class="fa fa-arrow-right"/> Open
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Help Section -->
+                    <div class="row mt-5 pt-4 border-top">
+                        <div class="col-12">
+                            <div class="alert alert-info" role="alert">
+                                <i class="fa fa-info-circle"/> <strong>Quick Tips:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Start by setting up your <strong>Finapify Connection</strong> with your API credentials</li>
+                                    <li>Configure <strong>Vendor Bank Mapping</strong> to match vendors with bank accounts</li>
+                                    <li>Set up <strong>Journal Mapping</strong> for proper accounting entries</li>
+                                    <li>Create <strong>Payment Requests</strong> or <strong>Payment Batches</strong> to initiate payments</li>
+                                    <li>Use <strong>Reconciliation Center</strong> to match payments with invoices</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <style>
+                    .o_dashboard_container {
+                        padding: 20px;
+                    }
+                    .o_dashboard_header {
+                        margin-bottom: 30px;
+                        padding-bottom: 20px;
+                        border-bottom: 2px solid #f0f0f0;
+                    }
+                    .o_dashboard_header h1 {
+                        font-size: 32px;
+                        font-weight: bold;
+                        color: #333;
+                        margin-bottom: 10px;
+                    }
+                    .o_section_title {
+                        font-size: 18px;
+                        font-weight: 600;
+                        color: #555;
+                        margin-bottom: 15px;
+                    }
+                    .dashboard-card {
+                        border: 1px solid #e3e6f0;
+                        border-radius: 5px;
+                        transition: all 0.3s ease;
+                        cursor: pointer;
+                    }
+                    .dashboard-card:hover {
+                        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+                        border-color: #007bff;
+                    }
+                    .dashboard-card .card-title a {
+                        text-decoration: none;
+                        color: #333;
+                        font-weight: 600;
+                    }
+                    .dashboard-card .card-title a:hover {
+                        color: #007bff;
+                    }
+                    .border-left-primary {
+                        border-left: 4px solid #007bff;
+                    }
+                    .border-left-warning {
+                        border-left: 4px solid #ffc107;
+                    }
+                    .border-left-success {
+                        border-left: 4px solid #28a745;
+                    }
+                    .text-primary { color: #007bff; }
+                    .text-warning { color: #ffc107; }
+                    .text-success { color: #28a745; }
+                    .text-info { color: #17a2b8; }
+                    .text-danger { color: #dc3545; }
+                    .text-secondary { color: #6c757d; }
+                    .text-dark { color: #343a40; }
+                </style>
+                <script>
+                    document.querySelectorAll('[data-action]').forEach(function(el) {
+                        el.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            var action = this.getAttribute('data-action');
+                            if (action) {
+                                window.location.href = '/web?#action=' + action;
+                            }
+                        });
+                    });
+                </script>
+            </form>
+        </field>
+    </record>
+
+</odoo>

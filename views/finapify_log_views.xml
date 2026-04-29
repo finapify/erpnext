@@ -1,0 +1,53 @@
+<odoo>
+    <record id="view_finapify_log_tree" model="ir.ui.view">
+        <field name="name">finapify.log.tree</field>
+        <field name="model">finapify.log</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="timestamp"/>
+                <field name="level"/>
+                <field name="action"/>
+                <field name="correlation_id"/>
+                <field name="model"/>
+                <field name="record_id"/>
+                <field name="message"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_finapify_log_form" model="ir.ui.view">
+        <field name="name">finapify.log.form</field>
+        <field name="model">finapify.log</field>
+        <field name="arch" type="xml">
+            <form string="Finapify Log">
+                <sheet>
+                    <group>
+                        <field name="timestamp" readonly="1"/>
+                        <field name="level" readonly="1"/>
+                        <field name="action" readonly="1"/>
+                        <field name="correlation_id" readonly="1"/>
+                        <field name="model" readonly="1"/>
+                        <field name="record_id" readonly="1"/>
+                        <field name="message" readonly="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Request">
+                            <field name="request_json" nolabel="1" widget="text" readonly="1"/>
+                        </page>
+                        <page string="Response">
+                            <field name="response_json" nolabel="1" widget="text" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_finapify_log" model="ir.actions.act_window">
+        <field name="name">Finapify Logs</field>
+        <field name="res_model">finapify.log</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[("company_id","=",current_company_id)]</field>
+        <field name="context">{'search_default_today': 0}</field>
+    </record>
+</odoo>

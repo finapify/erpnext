@@ -1,0 +1,77 @@
+<odoo>
+    <record id="view_finapify_payment_batch_tree" model="ir.ui.view">
+        <field name="name">finapify.payment.batch.tree</field>
+        <field name="model">finapify.payment.batch</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="mode"/>
+                <field name="total_amount"/>
+                <field name="currency_id"/>
+                <field name="status"/>
+                <field name="reconciliation_status"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_finapify_payment_batch_form" model="ir.ui.view">
+        <field name="name">finapify.payment.batch.form</field>
+        <field name="model">finapify.payment.batch</field>
+        <field name="arch" type="xml">
+            <form string="Payment Batch">
+                <sheet>
+                    <header>
+                        <button name="action_retry" type="object" string="Retry" class="btn-secondary" attrs="{'invisible':[('status','not in',('failed','processing','part_success'))]}"/>
+                        <button name="action_retry_reconcile" type="object" string="Retry Reconcile" class="btn-secondary" attrs="{'invisible':[('status','not in',('success','part_success'))]}"/>
+                        <field name="status" widget="statusbar" statusbar_visible="draft,otp_pending,submitted,processing,part_success,success,failed"/>
+                    </header>
+                    <group>
+                        <group>
+                            <field name="name" readonly="1"/>
+                            <field name="company_id" readonly="1"/>
+                            <field name="mode" readonly="1"/>
+                            <field name="source_bank_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="total_amount" readonly="1"/>
+                            <field name="currency_id" readonly="1"/>
+                            <field name="correlation_id" readonly="1"/>
+                            <field name="n8n_request_id" readonly="1"/>
+                            <field name="reconciliation_status" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Lines">
+                            <field name="line_ids" nolabel="1">
+                                <tree editable="bottom">
+                                    <field name="vendor_bill_id"/>
+                                    <field name="vendor_id"/>
+                                    <field name="amount"/>
+                                    <field name="source_bank_id"/>
+                                    <field name="vendor_bank_id"/>
+                                    <field name="status"/>
+                                    <field name="finapify_ref"/>
+                                    <field name="reconciliation_status"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Request Payload">
+                            <field name="request_payload_json" nolabel="1" widget="text" readonly="1"/>
+                        </page>
+                        <page string="Response Payload">
+                            <field name="response_payload_json" nolabel="1" widget="text" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_finapify_payment_batch" model="ir.actions.act_window">
+        <field name="name">Payment Batches</field>
+        <field name="res_model">finapify.payment.batch</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>
