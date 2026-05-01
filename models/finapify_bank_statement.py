@@ -115,7 +115,7 @@ class FinapifyBankStatement(models.Model):
             self.write({'state': 'fetching'})
             
             icp = self.env['ir.config_parameter'].sudo()
-            api_url = icp.get_param('finapify_payments.api_url', default='https://api.finapify.com')
+            api_url = icp.get_param('finapify_payments.api_url', default='https://api.finapify.com/webhook/erpnext')
             
             headers = {
                 'Authorization': f'Bearer {jwt}',

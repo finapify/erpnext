@@ -173,7 +173,7 @@ class FinapifyDashboardController(http.Controller):
             icp.set_param('finapify_payments.api_secret', api_secret)
 
             # Test API connection
-            api_url = icp.get_param('finapify_payments.api_url', default='https://api.finapify.com')
+            api_url = icp.get_param('finapify_payments.api_url', default='https://api.finapify.com/webhook/erpnext')
             
             import requests
             headers = {

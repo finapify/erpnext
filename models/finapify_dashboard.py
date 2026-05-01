@@ -72,7 +72,7 @@ class FinapifyDashboard(models.Model):
         return {
             'is_authenticated': icp.get_param('finapify_payments.is_authenticated', default='False') == 'True',
             'api_key': icp.get_param('finapify_payments.api_key', default=''),
-            'api_url': icp.get_param('finapify_payments.api_url', default='https://api.finapify.com'),
+            'api_url': icp.get_param('finapify_payments.api_url', default='https://api.finapify.com/webhook/erpnext'),
             'last_auth_at': icp.get_param('finapify_payments.last_auth_at', default=''),
             'auth_error': icp.get_param('finapify_payments.auth_error', default=''),
         }

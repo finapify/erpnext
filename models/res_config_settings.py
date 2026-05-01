@@ -11,7 +11,7 @@ class ResConfigSettings(models.TransientModel):
     finapify_callback_secret = fields.Char(string='Finapify Callback Secret')
     finapify_api_key = fields.Char(string='Finapify API Key')
     finapify_api_secret = fields.Char(string='Finapify API Secret')
-    finapify_api_url = fields.Char(string='Finapify API Base URL', default='https://api.finapify.com')
+    finapify_api_url = fields.Char(string='Finapify API Base URL', default='https://api.finapify.com/webhook/erpnext')
     finapify_is_authenticated = fields.Boolean(string='API Authenticated', readonly=True)
     finapify_last_auth_at = fields.Datetime(string='Last Authentication', readonly=True)
     finapify_auth_error = fields.Text(string='Authentication Error', readonly=True)
@@ -25,7 +25,7 @@ class ResConfigSettings(models.TransientModel):
             'finapify_callback_secret': icp.get_param('finapify_payments.callback_secret', default=''),
             'finapify_api_key': icp.get_param('finapify_payments.api_key', default=''),
             'finapify_api_secret': icp.get_param('finapify_payments.api_secret', default=''),
-            'finapify_api_url': icp.get_param('finapify_payments.api_url', default='https://api.finapify.com'),
+            'finapify_api_url': icp.get_param('finapify_payments.api_url', default='https://api.finapify.com/webhook/erpnext'),
             'finapify_is_authenticated': icp.get_param('finapify_payments.is_authenticated', default='False') == 'True',
             'finapify_last_auth_at': icp.get_param('finapify_payments.last_auth_at', default=''),
             'finapify_auth_error': icp.get_param('finapify_payments.auth_error', default=''),
