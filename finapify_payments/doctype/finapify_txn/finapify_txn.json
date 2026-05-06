@@ -1,0 +1,31 @@
+{
+ "actions": [],
+ "autoname": "FTX-.YYYY.-.#####",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company", "finapify_ref", "col1", "request_model", "request_id"
+ ],
+ "fields": [
+  {"fieldname": "company", "fieldtype": "Link", "label": "Company",
+   "options": "Company", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "finapify_ref", "fieldtype": "Data", "label": "Finapify Reference",
+   "reqd": 1, "in_list_view": 1, "unique": 1},
+  {"fieldname": "col1", "fieldtype": "Column Break"},
+  {"fieldname": "request_model", "fieldtype": "Data", "label": "Source DocType"},
+  {"fieldname": "request_id", "fieldtype": "Data", "label": "Source Record ID"}
+ ],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Finapify Payments",
+ "name": "Finapify Txn",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 0, "create": 1, "delete": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

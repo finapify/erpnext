@@ -1,0 +1,71 @@
+{
+ "charts": [],
+ "content": "[]",
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "is_hidden": 0,
+ "label": "Finapify Payments",
+ "module": "Finapify Payments",
+ "name": "Finapify Payments",
+ "public": 1,
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "label": "Finapify Connection",
+   "link_to": "Finapify Connection",
+   "name": "Finapify Connection",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "label": "Payment Requests",
+   "link_to": "Finapify Payment Request",
+   "name": "Finapify Payment Request",
+   "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "label": "Payment Batches",
+   "link_to": "Finapify Payment Batch",
+   "name": "Finapify Payment Batch",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "label": "Bank Statements",
+   "link_to": "Finapify Bank Statement",
+   "name": "Finapify Bank Statement",
+   "type": "DocType"
+  },
+  {
+   "color": "Yellow",
+   "label": "Vendor Bank Map",
+   "link_to": "Finapify Vendor Bank Map",
+   "name": "Finapify Vendor Bank Map",
+   "type": "DocType"
+  },
+  {
+   "color": "Yellow",
+   "label": "Journal Map",
+   "link_to": "Finapify Journal Map",
+   "name": "Finapify Journal Map",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "label": "Logs",
+   "link_to": "Finapify Log",
+   "name": "Finapify Log",
+   "type": "DocType"
+  },
+  {
+   "color": "Gray",
+   "label": "Settings",
+   "link_to": "Finapify Settings",
+   "name": "Finapify Settings",
+   "type": "DocType"
+  }
+ ]
+}

@@ -1,0 +1,37 @@
+{
+ "actions": [],
+ "autoname": "format:{company}-{finapify_source_bank_id}",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company", "finapify_source_bank_id", "col1",
+  "mode_of_payment", "bank_account", "disabled"
+ ],
+ "fields": [
+  {"fieldname": "company", "fieldtype": "Link", "in_list_view": 1,
+   "label": "Company", "options": "Company", "reqd": 1},
+  {"fieldname": "finapify_source_bank_id", "fieldtype": "Data",
+   "label": "Finapify Source Bank ID", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "col1", "fieldtype": "Column Break"},
+  {"fieldname": "mode_of_payment", "fieldtype": "Link",
+   "label": "Mode of Payment", "options": "Mode of Payment", "reqd": 1,
+   "in_list_view": 1},
+  {"fieldname": "bank_account", "fieldtype": "Link",
+   "label": "Bank Account", "options": "Bank Account"},
+  {"fieldname": "disabled", "fieldtype": "Check", "label": "Disabled", "default": "0"}
+ ],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Finapify Payments",
+ "name": "Finapify Journal Map",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "Accounts Manager", "read": 1, "write": 1, "create": 1, "delete": 1},
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1}
+ ],
+ "sort_field": "finapify_source_bank_id",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

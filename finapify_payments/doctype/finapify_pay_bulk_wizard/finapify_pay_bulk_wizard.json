@@ -1,0 +1,37 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company", "mode", "col1",
+  "source_bank_id", "otp",
+  "sec_bills", "bill_ids"
+ ],
+ "fields": [
+  {"fieldname": "company", "fieldtype": "Link", "label": "Company",
+   "options": "Company", "reqd": 1},
+  {"fieldname": "mode", "fieldtype": "Select", "label": "Payment Mode",
+   "options": "one_bank\nmulti_bank", "default": "one_bank"},
+  {"fieldname": "col1", "fieldtype": "Column Break"},
+  {"fieldname": "source_bank_id", "fieldtype": "Data",
+   "label": "Default Payer Bank ID"},
+  {"fieldname": "otp", "fieldtype": "Password", "label": "OTP", "reqd": 1},
+  {"fieldname": "sec_bills", "fieldtype": "Section Break", "label": "Vendor Bills"},
+  {"fieldname": "bill_ids", "fieldtype": "Table",
+   "label": "Vendor Bills", "options": "Finapify Bulk Bill Row"}
+ ],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Finapify Payments",
+ "name": "Finapify Pay Bulk Wizard",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "Accounts User", "read": 1, "write": 1, "create": 1, "delete": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

@@ -1,0 +1,39 @@
+{
+ "actions": [],
+ "autoname": "FJB-.YYYY.-.#####",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company", "job_type", "col1",
+  "ref_model", "ref_id", "run_at", "status",
+  "attempts", "last_error"
+ ],
+ "fields": [
+  {"fieldname": "company", "fieldtype": "Link", "label": "Company",
+   "options": "Company", "reqd": 1},
+  {"fieldname": "job_type", "fieldtype": "Select", "label": "Job Type",
+   "options": "Retry Payment\nReconcile", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "col1", "fieldtype": "Column Break"},
+  {"fieldname": "ref_model", "fieldtype": "Data", "label": "Source DocType", "reqd": 1},
+  {"fieldname": "ref_id", "fieldtype": "Data", "label": "Source Record ID", "reqd": 1},
+  {"fieldname": "run_at", "fieldtype": "Datetime", "label": "Run At", "reqd": 1},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status",
+   "options": "Queued\nRunning\nDone\nFailed", "default": "Queued",
+   "in_list_view": 1},
+  {"fieldname": "attempts", "fieldtype": "Int", "label": "Attempts", "default": "0"},
+  {"fieldname": "last_error", "fieldtype": "Text", "label": "Last Error", "read_only": 1}
+ ],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Finapify Payments",
+ "name": "Finapify Job",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1}
+ ],
+ "sort_field": "run_at",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 0
+}

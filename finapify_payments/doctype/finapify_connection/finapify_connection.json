@@ -1,0 +1,53 @@
+{
+ "actions": [],
+ "autoname": "format:{company}-{user}",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title", "company", "user", "col1",
+  "is_connected", "state", "sec_jwt",
+  "supabase_user_id", "consent_id", "supabase_jwt_encrypted",
+  "default_source_bank_id", "bank_accounts_json", "sec_meta",
+  "last_sync_at", "error_message"
+ ],
+ "fields": [
+  {"fieldname": "title", "fieldtype": "Data", "label": "Title", "read_only": 1},
+  {"fieldname": "company", "fieldtype": "Link", "in_list_view": 1,
+   "label": "Company", "options": "Company", "reqd": 1},
+  {"fieldname": "user", "fieldtype": "Link", "in_list_view": 1,
+   "label": "User", "options": "User", "reqd": 1},
+  {"fieldname": "col1", "fieldtype": "Column Break"},
+  {"fieldname": "is_connected", "fieldtype": "Check", "label": "Is Connected",
+   "in_list_view": 1, "read_only": 1},
+  {"fieldname": "state", "fieldtype": "Select", "label": "State",
+   "options": "Disconnected\nConnected\nError", "default": "Disconnected",
+   "in_list_view": 1, "read_only": 1},
+  {"fieldname": "sec_jwt", "fieldtype": "Section Break", "label": "Connection Details"},
+  {"fieldname": "supabase_user_id", "fieldtype": "Data", "label": "Supabase User ID"},
+  {"fieldname": "consent_id", "fieldtype": "Data", "label": "Consent ID"},
+  {"fieldname": "supabase_jwt_encrypted", "fieldtype": "Small Text",
+   "label": "Supabase JWT (Encrypted)", "hidden": 1},
+  {"fieldname": "default_source_bank_id", "fieldtype": "Data",
+   "label": "Default Payer Bank ID"},
+  {"fieldname": "bank_accounts_json", "fieldtype": "Code",
+   "label": "Linked Bank Accounts (JSON)", "options": "JSON"},
+  {"fieldname": "sec_meta", "fieldtype": "Section Break", "label": "Metadata"},
+  {"fieldname": "last_sync_at", "fieldtype": "Datetime", "label": "Last Sync At", "read_only": 1},
+  {"fieldname": "error_message", "fieldtype": "Text", "label": "Error Message", "read_only": 1}
+ ],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Finapify Payments",
+ "name": "Finapify Connection",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "Accounts User", "read": 1, "write": 1, "create": 1, "delete": 0},
+  {"role": "Accounts Manager", "read": 1, "write": 1, "create": 1, "delete": 1},
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
