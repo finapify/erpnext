@@ -1,19 +1,28 @@
-from odoo import api, fields, models
+import frappe
+from frappe import _
+from frappe.model.document import Document
 
 
-class ResPartner(models.Model):
-    _inherit = 'res.partner'
+class FinapifySupplier(Document):
+    """Extends Supplier with Finapify vendor bank map helper."""
 
-    finapify_vendor_bank_map_id = fields.Many2one(
-        'finapify.vendor.bank.map',
-        compute='_compute_finapify_map',
-        string='Finapify Bank Mapping'
-    )
+    def get_finapify_bank_map(self):
+        return frappe.db.get_value(
+            'Finapify Vendor Bank Map',
+            {'supplier': self.name},
+            ['finapify_vendor_bank_id', 'verified'],
+            as_dict=True
+        ) or {}
 
-    def _compute_finapify_map(self):
-        for p in self:
-            m = self.env['finapify.vendor.bank.map'].search([
-                ('company_id','=', self.env.company.id),
-                ('partner_id','=', p.id),
-            ], limit=1)
-            p.finapify_vendor_bank_map_id = m
+
+@frappe.whitelist()
+def get_vendor_bank_mappings(supplier):
+    """Return Finapify bank mapping for a supplier."""
+    if not supplier:
+        return {}
+    return frappe.db.get_value(
+        'Finapify Vendor Bank Map',
+        {'supplier': supplier},
+        ['finapify_vendor_bank_id', 'verified'],
+        as_dict=True
+    ) or {}

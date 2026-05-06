@@ -1,67 +1,64 @@
-from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+import frappe
+from frappe import _
+
+try:
+    from erpnext.buying.doctype.purchase_order.purchase_order import PurchaseOrder
+    _base = PurchaseOrder
+except ImportError:
+    from frappe.model.document import Document
+    _base = Document
 
 
-class PurchaseOrder(models.Model):
-    _inherit = 'purchase.order'
+class FinapifyPurchaseOrder(_base):
+    """Extends Purchase Order with Finapify payment action."""
 
     def action_finapify_pay(self):
-        """Action to pay the purchase order via Finapify.
-        If no bill exists, it creates one, posts it, and then opens the payment wizard.
-        """
-        self.ensure_one()
-        if self.state not in ('purchase', 'done'):
-            raise UserError(_('Purchase order must be confirmed before payment.'))
+        if self.status not in ('To Receive and Bill', 'To Bill', 'Completed'):
+            frappe.throw(_('Purchase order must be confirmed before payment.'))
 
-        # Check if there are already invoices
-        invoices = self.invoice_ids.filtered(lambda x: x.state != 'cancel')
-        
+        invoices = frappe.get_list(
+            'Purchase Invoice',
+            filters={
+                'purchase_order': self.name,
+                'docstatus': ['!=', 2],
+            },
+            fields=['name', 'docstatus', 'outstanding_amount'],
+            order_by='creation desc',
+        )
+
+        invoice = None
+
         if not invoices:
-            if self.invoice_status == 'no':
-                raise UserError(_('There is nothing to invoice for this purchase order.'))
-            
-            # Create a new invoice
-            res = self.action_create_invoice()
-            # The action returns a window action for the new invoice
-            invoice_id = res.get('res_id')
-            if not invoice_id:
-                # If multiple invoices created, pick one or raise
-                invoice_id = self.invoice_ids.filtered(lambda x: x.state == 'draft')[:1].id
-            
-            if not invoice_id:
-                raise UserError(_('Could not create an invoice for this purchase order.'))
-            
-            invoice = self.env['account.move'].browse(invoice_id)
-        else:
-            # Pick the most relevant one (latest draft or latest posted with residual)
-            invoice = invoices.filtered(lambda x: x.state == 'draft')[:1]
-            if not invoice:
-                invoice = invoices.filtered(lambda x: x.state == 'posted' and x.amount_residual > 0)[:1]
-            
-            if not invoice:
-                if self.invoice_status == 'to invoice':
-                    res = self.action_create_invoice()
-                    invoice_id = res.get('res_id')
-                    if invoice_id:
-                        invoice = self.env['account.move'].browse(invoice_id)
-                
-            if not invoice:
-                raise UserError(_('No outstanding invoice found to pay, and nothing to invoice.'))
+            if self.billing_status == 'Not Billed':
+                frappe.throw(_('There is nothing to invoice for this purchase order.'))
+            self.make_purchase_invoice()
+            invoices = frappe.get_list(
+                'Purchase Invoice',
+                filters={'purchase_order': self.name, 'docstatus': 0},
+                fields=['name', 'docstatus', 'outstanding_amount'],
+                limit=1,
+            )
 
-        # Ensure invoice is posted
-        if invoice.state == 'draft':
-            invoice.action_post()
+        for inv in invoices:
+            if inv.docstatus == 0:
+                invoice_doc = frappe.get_doc('Purchase Invoice', inv.name)
+                invoice_doc.submit()
+                invoice = invoice_doc
+                break
+            if inv.docstatus == 1 and inv.outstanding_amount > 0:
+                invoice = frappe.get_doc('Purchase Invoice', inv.name)
+                break
 
-        # Open the payment wizard
+        if not invoice:
+            frappe.throw(_('No outstanding invoice found to pay, and nothing to invoice.'))
+
         return {
-            'name': _('Pay with Finapify'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'finapify.pay.single.wizard',
-            'view_mode': 'form',
-            'target': 'new',
+            'doctype': 'Finapify Pay Single Wizard',
+            'new_doc': True,
             'context': {
-                'active_id': invoice.id,
-                'active_model': 'account.move',
-                'default_vendor_bill_id': invoice.id,
-            }
+                'vendor_bill': invoice.name,
+                'vendor': invoice.supplier,
+                'amount': invoice.outstanding_amount,
+                'currency': invoice.currency,
+            },
         }

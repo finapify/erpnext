@@ -1,46 +1,51 @@
-from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+import frappe
+from frappe import _
+
+try:
+    from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseInvoice
+    _base = PurchaseInvoice
+except ImportError:
+    from frappe.model.document import Document
+    _base = Document
 
 
-class AccountMove(models.Model):
-    _inherit = 'account.move'
-
-    finapify_vendor_bank_id = fields.Char(compute='_compute_finapify_vendor_bank_id', string='Finapify Vendor Bank ID')
-
-    def _compute_finapify_vendor_bank_id(self):
-        for move in self:
-            if move.partner_id and move.company_id:
-                m = self.env['finapify.vendor.bank.map'].search([
-                    ('company_id','=', move.company_id.id),
-                    ('partner_id','=', move.partner_id.id),
-                ], limit=1)
-                move.finapify_vendor_bank_id = m.finapify_vendor_bank_id if m else False
-            else:
-                move.finapify_vendor_bank_id = False
+class FinapifyPurchaseInvoice(_base):
+    """Extends Purchase Invoice with Finapify payment action."""
 
     def action_finapify_pay(self):
-        """Action to pay the vendor bill via Finapify.
-        If draft, it posts the bill first.
-        """
-        self.ensure_one()
-        if self.move_type not in ('in_invoice', 'in_refund'):
-            raise UserError(_('Pay with Finapify is only available for vendor bills.'))
+        if self.move_type not in ('in_invoice', 'in_refund') and self.doctype != 'Purchase Invoice':
+            frappe.throw(_('Pay with Finapify is only available for vendor bills.'))
 
-        if self.state == 'draft':
-            self.action_post()
+        if self.docstatus == 0:
+            self.submit()
 
-        if self.state != 'posted':
-            raise UserError(_('Bill must be posted before payment.'))
+        if self.docstatus != 1:
+            frappe.throw(_('Bill must be submitted before payment.'))
 
         return {
-            'name': _('Pay with Finapify'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'finapify.pay.single.wizard',
-            'view_mode': 'form',
-            'target': 'new',
+            'doctype': 'Finapify Pay Single Wizard',
+            'new_doc': True,
             'context': {
-                'active_id': self.id,
-                'active_model': 'account.move',
-                'default_vendor_bill_id': self.id,
-            }
+                'vendor_bill': self.name,
+                'vendor': self.supplier,
+                'amount': self.outstanding_amount,
+                'currency': self.currency,
+            },
         }
+
+
+@frappe.whitelist()
+def get_finapify_payment_info(doctype, name):
+    """Return Finapify vendor bank map info for a Purchase Invoice."""
+    doc = frappe.get_doc(doctype, name)
+    supplier = getattr(doc, 'supplier', None) or getattr(doc, 'party', None)
+    if not supplier:
+        return {}
+
+    bank_map = frappe.db.get_value(
+        'Finapify Vendor Bank Map',
+        {'supplier': supplier},
+        ['finapify_vendor_bank_id', 'verified'],
+        as_dict=True
+    )
+    return bank_map or {}

@@ -3,13 +3,11 @@ import hashlib
 import hmac
 import json
 import logging
-import os
-import time
 import uuid
 from datetime import datetime
 
-from odoo import _
-from odoo.exceptions import UserError
+import frappe
+from frappe import _
 
 _logger = logging.getLogger(__name__)
 
@@ -34,7 +32,6 @@ def safe_json_dumps(obj) -> str:
 
 
 def mask_secrets(payload: dict) -> dict:
-    """Return a copy with common sensitive fields masked."""
     def _mask(v):
         if not v:
             return v
@@ -47,25 +44,15 @@ def mask_secrets(payload: dict) -> dict:
         return payload
     out = json.loads(json.dumps(payload, default=str))
 
-    # mask common keys
     for k in ["Authorization", "supabase_jwt", "jwt", "token", "otp", "otp_value", "value"]:
         if k in out:
             out[k] = "***"
 
-    # nested masking
     if "otp" in out and isinstance(out["otp"], dict):
         if "value" in out["otp"]:
             out["otp"]["value"] = "***"
 
     return out
-
-
-# --------------------------
-# Encryption helpers
-# --------------------------
-# We prefer Fernet if 'cryptography' is available.
-# If not, we fallback to a deterministic XOR stream derived from secret.
-# NOTE: XOR fallback is not strong crypto; keep callback_secret private and rotate.
 
 
 def _derive_key(secret: str) -> bytes:
@@ -75,16 +62,12 @@ def _derive_key(secret: str) -> bytes:
 def encrypt_text(plaintext: str, secret: str) -> str:
     if plaintext is None:
         return ""
-
-    # Fernet if available
     try:
         from cryptography.fernet import Fernet
         key = base64.urlsafe_b64encode(_derive_key(secret))
         f = Fernet(key)
-        token = f.encrypt(plaintext.encode('utf-8'))
-        return token.decode('utf-8')
+        return f.encrypt(plaintext.encode('utf-8')).decode('utf-8')
     except Exception:
-        # XOR fallback
         key = _derive_key(secret)
         data = plaintext.encode('utf-8')
         x = bytes([b ^ key[i % len(key)] for i, b in enumerate(data)])
@@ -94,13 +77,11 @@ def encrypt_text(plaintext: str, secret: str) -> str:
 def decrypt_text(ciphertext: str, secret: str) -> str:
     if not ciphertext:
         return ""
-
     try:
         from cryptography.fernet import Fernet
         key = base64.urlsafe_b64encode(_derive_key(secret))
         f = Fernet(key)
-        data = f.decrypt(ciphertext.encode('utf-8'))
-        return data.decode('utf-8')
+        return f.decrypt(ciphertext.encode('utf-8')).decode('utf-8')
     except Exception:
         try:
             raw = base64.b64decode(ciphertext.encode('utf-8'))
@@ -119,13 +100,12 @@ def ensure_requests_available():
     try:
         import requests  # noqa
     except Exception as e:
-        raise UserError(_("Python 'requests' library is required. Error: %s") % str(e))
+        frappe.throw(_("Python 'requests' library is required. Error: %s") % str(e))
 
 
 def http_post_json(url: str, headers: dict, payload: dict, timeout_s: int = 30):
     ensure_requests_available()
     import requests
-
     resp = requests.post(url, headers=headers, json=payload, timeout=timeout_s)
     try:
         data = resp.json()
@@ -134,40 +114,50 @@ def http_post_json(url: str, headers: dict, payload: dict, timeout_s: int = 30):
     return resp.status_code, data
 
 
-def check_finapify_authenticated(env):
-    """
-    Check if Finapify API is authenticated.
-    Raises UserError if not authenticated.
-    Returns True if authenticated.
-    """
-    icp = env['ir.config_parameter'].sudo()
-    is_authenticated = icp.get_param('finapify_payments.is_authenticated', default='False') == 'True'
-    
+def check_finapify_authenticated():
+    """Raises frappe.ValidationError if Finapify API is not authenticated."""
+    try:
+        is_authenticated = frappe.db.get_single_value('Finapify Settings', 'is_authenticated')
+    except Exception:
+        is_authenticated = False
+
     if not is_authenticated:
-        api_key = icp.get_param('finapify_payments.api_key', default='')
-        api_secret = icp.get_param('finapify_payments.api_secret', default='')
-        
+        try:
+            api_key = frappe.db.get_single_value('Finapify Settings', 'api_key')
+            api_secret = frappe.db.get_single_value('Finapify Settings', 'api_secret')
+        except Exception:
+            api_key = None
+            api_secret = None
+
         if not api_key or not api_secret:
-            raise UserError(
+            frappe.throw(
                 _('Finapify API credentials are not configured. '
                   'Please set API Key and Secret in Finapify Settings and test authentication.')
             )
         else:
-            raise UserError(
+            frappe.throw(
                 _('Finapify API is not authenticated. '
                   'Please verify your API credentials and click "Test Authentication" in Finapify Settings.')
             )
-    
+
     return True
 
 
-def get_finapify_auth_status(env):
-    """Get current Finapify authentication status"""
-    icp = env['ir.config_parameter'].sudo()
-    return {
-        'is_authenticated': icp.get_param('finapify_payments.is_authenticated', default='False') == 'True',
-        'api_key': icp.get_param('finapify_payments.api_key', default=''),
-        'api_url': icp.get_param('finapify_payments.api_url', default='https://api.finapify.com/webhook/erpnext'),
-        'last_auth_at': icp.get_param('finapify_payments.last_auth_at', default=''),
-        'auth_error': icp.get_param('finapify_payments.auth_error', default=''),
-    }
+def get_finapify_auth_status():
+    try:
+        return {
+            'is_authenticated': frappe.db.get_single_value('Finapify Settings', 'is_authenticated') or False,
+            'api_key': frappe.db.get_single_value('Finapify Settings', 'api_key') or '',
+            'api_url': frappe.db.get_single_value('Finapify Settings', 'api_url') or 'https://api.finapify.com/webhook/erpnext',
+            'last_auth_at': frappe.db.get_single_value('Finapify Settings', 'last_auth_at') or '',
+            'auth_error': frappe.db.get_single_value('Finapify Settings', 'auth_error') or '',
+        }
+    except Exception as e:
+        _logger.error("Error getting Finapify auth status: %s", str(e))
+        return {
+            'is_authenticated': False,
+            'api_key': '',
+            'api_url': 'https://api.finapify.com/webhook/erpnext',
+            'last_auth_at': '',
+            'auth_error': str(e),
+        }

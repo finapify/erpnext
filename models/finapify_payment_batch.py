@@ -1,161 +1,96 @@
-from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+import frappe
+from frappe import _
+from frappe.model.document import Document
 
-from .utils import generate_uuid, sha256_hex, safe_json_dumps, http_post_json, check_finapify_authenticated
+from .utils import (
+    generate_uuid, safe_json_dumps, mask_secrets,
+    http_post_json, sha256_hex, check_finapify_authenticated,
+)
 
 
-class FinapifyPaymentBatch(models.Model):
-    _name = 'finapify.payment.batch'
-    _description = 'Finapify Payment Batch'
-    _order = 'id desc'
-
-    name = fields.Char(required=True, default=lambda self: _('New'))
-    company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company)
-
-    mode = fields.Selection([('one_bank','One bank'),('multi_bank','Multi bank')], default='one_bank', required=True)
-    source_bank_id = fields.Char(string='Default Source Bank ID')
-
-    bill_ids = fields.Many2many('account.move', string='Vendor Bills')
-    line_ids = fields.One2many('finapify.payment.batch.line', 'batch_id', string='Lines')
-
-    currency_id = fields.Many2one('res.currency', required=True, default=lambda self: self.env.company.currency_id)
-    total_amount = fields.Monetary(compute='_compute_total', store=True)
-
-    otp_required = fields.Boolean(default=True)
-
-    status = fields.Selection([
-        ('draft','Draft'),
-        ('review','Review'),
-        ('otp_pending','OTP Pending'),
-        ('submitted','Submitted'),
-        ('processing','Processing'),
-        ('part_success','Partially Successful'),
-        ('success','Success'),
-        ('failed','Failed'),
-    ], default='draft', index=True)
-
-    idempotency_key = fields.Char(index=True)
-    correlation_id = fields.Char(index=True)
-    n8n_request_id = fields.Char(index=True)
-
-    request_payload_json = fields.Text()
-    response_payload_json = fields.Text()
-
-    reconciliation_status = fields.Selection([
-        ('not_started','Not started'),
-        ('partial','Partial'),
-        ('reconciled','Reconciled'),
-    ], default='not_started', index=True)
-
-    attempts = fields.Integer(default=0)
-    next_retry_at = fields.Datetime()
-    last_error = fields.Text()
-
-    @api.depends('line_ids.amount')
-    def _compute_total(self):
-        for rec in self:
-            rec.total_amount = sum(rec.line_ids.mapped('amount'))
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        seq = self.env['ir.sequence']
-        for vals in vals_list:
-            if vals.get('name') in (False, _('New'), 'New'):
-                vals['name'] = seq.next_by_code('finapify.payment.batch') or _('New')
-        return super().create(vals_list)
-
-    _sql_constraints = [
-        ('uniq_company_idem', 'unique(company_id, idempotency_key)', 'Duplicate batch (idempotency).'),
-    ]
+class FinapifyPaymentBatch(Document):
 
     def _log(self, action, level='info', message=None, req=None, resp=None):
-        for rec in self:
-            self.env['finapify.log'].sudo().create({
-                'company_id': rec.company_id.id,
-                'user_id': self.env.user.id,
-                'correlation_id': rec.correlation_id,
-                'model': rec._name,
-                'record_id': rec.id,
+        try:
+            frappe.get_doc({
+                'doctype': 'Finapify Log',
+                'company': self.company,
+                'user': frappe.session.user,
+                'correlation_id': self.correlation_id or '',
+                'model': self.doctype,
+                'record_id': self.name,
                 'action': action,
                 'level': level,
                 'message': message or '',
-                'request_json': safe_json_dumps(req or {}) if req else False,
-                'response_json': safe_json_dumps(resp or {}) if resp else False,
-            })
+                'request_json': safe_json_dumps(req or {}) if req else '',
+                'response_json': safe_json_dumps(resp or {}) if resp else '',
+            }).insert(ignore_permissions=True)
+        except Exception as e:
+            frappe.log_error(f"Error logging batch: {e}", 'Finapify Log Error')
 
     def _get_connection(self):
-        conn = self.env['finapify.connection'].search([
-            ('company_id','=', self.company_id.id),
-            ('user_id','=', self.env.user.id),
-        ], limit=1)
-        if not conn or not conn.is_connected:
-            raise UserError(_('Finapify is not connected for this user/company.'))
+        name = frappe.db.get_value(
+            'Finapify Connection',
+            {'company': self.company, 'user': frappe.session.user},
+            'name'
+        )
+        if not name:
+            frappe.throw(_('Finapify is not connected for this user/company.'))
+        conn = frappe.get_doc('Finapify Connection', name)
+        if not conn.is_connected:
+            frappe.throw(_('Finapify is not connected for this user/company.'))
         return conn
 
     def _get_n8n_url(self):
-        return self.env['ir.config_parameter'].sudo().get_param(
-            'finapify_payments.n8n_url',
-            default='https://n8n.finapify.com/webhook-test/odoo'
+        return (
+            frappe.db.get_single_value('Finapify Settings', 'n8n_url')
+            or 'https://n8n.finapify.com/webhook-test/odoo'
         )
 
     def _compute_idempotency_key(self):
-        self.ensure_one()
-        parts = ["bulk", str(self.company_id.id), self.mode, str(self.currency_id.name), str(self.total_amount)]
-        for ln in self.line_ids.sorted('vendor_bill_id'):
-            parts.append(f"{ln.vendor_bill_id.id}:{ln.amount}:{ln.source_bank_id}:{ln.vendor_bank_id}")
+        parts = ['bulk', self.company, self.mode, self.currency, str(self.total_amount)]
+        for ln in self.line_ids:
+            parts.append(f"{ln.vendor_bill}:{ln.amount}:{ln.source_bank_id}:{ln.vendor_bank_id}")
         return sha256_hex('|'.join(parts))
 
     def action_submit_to_n8n(self, otp_value: str):
-        self.ensure_one()
-        
-        # Check if Finapify API is authenticated
-        check_finapify_authenticated(self.env)
-        
-        if self.status not in ('draft','review','otp_pending','failed'):
-            raise UserError(_('This batch cannot be submitted in current state.'))
+        check_finapify_authenticated()
+
+        if self.status not in ('Draft', 'Review', 'OTP Pending', 'Failed'):
+            frappe.throw(_('This batch cannot be submitted in current state.'))
 
         if not self.line_ids:
-            raise UserError(_('No lines to pay.'))
+            frappe.throw(_('No lines to pay.'))
 
         conn = self._get_connection()
         jwt = conn.get_supabase_jwt()
         if not jwt:
-            raise UserError(_('Supabase JWT missing.'))
+            frappe.throw(_('Supabase JWT missing.'))
 
-        # validate journal mapping(s)
-        source_bank_ids = set(self.line_ids.mapped('source_bank_id'))
+        source_bank_ids = {ln.source_bank_id for ln in self.line_ids}
         for sb in source_bank_ids:
-            if not self.env['finapify.journal.map'].search([
-                ('company_id','=', self.company_id.id),
-                ('finapify_source_bank_id','=', sb),
-                ('active','=', True)
-            ], limit=1):
-                raise UserError(_("Missing journal mapping for source bank_id: %s") % sb)
+            if not frappe.db.exists('Finapify Journal Map', {'company': self.company, 'finapify_source_bank_id': sb}):
+                frappe.throw(_('Missing journal mapping for source bank_id: %s') % sb)
 
         correlation_id = self.correlation_id or generate_uuid()
         idem = self.idempotency_key or self._compute_idempotency_key()
-
-        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
-        callback_url = f"{base_url}/finapify/callback"
+        callback_url = f"{frappe.utils.get_url()}/api/method/finapify_payments.controllers.main.finapify_callback"
 
         items = []
         for ln in self.line_ids:
-            bill = ln.vendor_bill_id
             items.append({
-                'bill_id': bill.id,
-                'bill_name': bill.name,
-                'vendor_id': ln.vendor_id.id,
-                'vendor_name': ln.vendor_id.name,
+                'bill_id': ln.vendor_bill,
+                'vendor': ln.vendor,
                 'amount': float(ln.amount),
                 'vendor_bank_id': ln.vendor_bank_id,
                 'source_bank_id': ln.source_bank_id,
             })
 
         payload = {
-            'product': 'odoo',
+            'product': 'frappe',
             'action': 'initiate_payment',
-            'company_id': self.company_id.id,
-            'user_id': self.env.user.id,
+            'company': self.company,
+            'user': frappe.session.user,
             'correlation_id': correlation_id,
             'idempotency_key': idem,
             'connection': {
@@ -165,62 +100,59 @@ class FinapifyPaymentBatch(models.Model):
             'otp': {'required': bool(self.otp_required), 'value': otp_value or ''},
             'payment': {
                 'mode': 'bulk',
-                'currency': self.currency_id.name,
+                'currency': self.currency,
                 'total_amount': float(self.total_amount),
                 'reference': self.name,
             },
             'items': items,
             'callback': {
                 'url': callback_url,
-                'signature_type': 'hmac_sha256'
-            }
+                'signature_type': 'hmac_sha256',
+            },
         }
 
-        headers = {"Authorization": f"Bearer {jwt}"}
-        n8n_url = self._get_n8n_url()
+        headers = {'Authorization': f'Bearer {jwt}'}
 
-        self.write({
-            'status': 'submitted',
-            'correlation_id': correlation_id,
-            'idempotency_key': idem,
-            'request_payload_json': safe_json_dumps(payload),
-            'attempts': self.attempts + 1,
-        })
+        self.db_set('status', 'Submitted')
+        self.db_set('correlation_id', correlation_id)
+        self.db_set('idempotency_key', idem)
+        self.db_set('request_payload_json', safe_json_dumps(payload))
+        self.db_set('attempts', (self.attempts or 0) + 1)
         self._log('initiate', 'info', 'Submitting batch to n8n', req=payload)
 
-        status_code, data = http_post_json(n8n_url, headers=headers, payload=payload, timeout_s=60)
-        self.write({
-            'response_payload_json': safe_json_dumps(data),
-            'n8n_request_id': data.get('n8n_request_id') or self.n8n_request_id,
-        })
+        status_code, data = http_post_json(self._get_n8n_url(), headers=headers, payload=payload, timeout_s=60)
+
+        self.db_set('response_payload_json', safe_json_dumps(data))
+        if data.get('n8n_request_id'):
+            self.db_set('n8n_request_id', data['n8n_request_id'])
 
         if status_code >= 400 or not data.get('ok', True):
-            self.write({'status': 'failed', 'last_error': safe_json_dumps(data)})
+            self.db_set('status', 'Failed')
+            self.db_set('last_error', safe_json_dumps(data))
             self._log('initiate', 'error', 'n8n returned error', resp=data)
             return
 
         st = data.get('status')
-        self._log('initiate', 'info', f"n8n status: {st}", resp=data)
+        self._log('initiate', 'info', f'n8n status: {st}', resp=data)
 
-        if st in ('success','part_success'):
+        if st in ('success', 'part_success'):
             self._apply_results_and_finalize(data)
         elif st == 'processing':
-            self.write({'status': 'processing'})
+            self.db_set('status', 'Processing')
         else:
-            self.write({'status': 'failed', 'last_error': safe_json_dumps(data)})
+            self.db_set('status', 'Failed')
+            self.db_set('last_error', safe_json_dumps(data))
 
     def _apply_results_and_finalize(self, data: dict):
-        self.ensure_one()
         results = data.get('results') or []
         any_failed = False
         any_success = False
 
-        # index lines by bill_id
-        by_bill = {ln.vendor_bill_id.id: ln for ln in self.line_ids}
+        by_bill = {ln.vendor_bill: ln for ln in self.line_ids}
 
         for r in results:
-            bid = int(r.get('bill_id') or 0)
-            ln = by_bill.get(bid)
+            bill_id = str(r.get('bill_id') or '')
+            ln = by_bill.get(bill_id)
             if not ln:
                 continue
             if r.get('status') == 'success':
@@ -228,152 +160,130 @@ class FinapifyPaymentBatch(models.Model):
                 ln._apply_success_result(r)
             else:
                 any_failed = True
-                ln.write({'status': 'failed', 'last_error': r.get('message') or 'Failed'})
+                ln.db_set('status', 'Failed')
+                ln.db_set('last_error', r.get('message') or 'Failed')
 
         if any_success and any_failed:
-            self.write({'status': 'part_success'})
-        elif any_success and not any_failed:
-            self.write({'status': 'success'})
-        elif any_failed and not any_success:
-            self.write({'status': 'failed'})
+            self.db_set('status', 'Part Success')
+        elif any_success:
+            self.db_set('status', 'Success')
+        elif any_failed:
+            self.db_set('status', 'Failed')
         else:
-            self.write({'status': 'processing'})
+            self.db_set('status', 'Processing')
 
-        # attempt reconcile for all success lines
-        for ln in self.line_ids.filtered(lambda x: x.status == 'success'):
-            ln._attempt_reconcile()
+        for ln in self.line_ids:
+            if ln.status == 'Success':
+                ln._attempt_reconcile()
 
-        # compute batch reconciliation status
-        if all(ln.reconciliation_status == 'reconciled' for ln in self.line_ids if ln.status == 'success'):
-            self.write({'reconciliation_status': 'reconciled'})
-        elif any(ln.reconciliation_status in ('partial','reconciled') for ln in self.line_ids):
-            self.write({'reconciliation_status': 'partial'})
+        all_reconciled = all(
+            ln.reconciliation_status == 'Reconciled'
+            for ln in self.line_ids if ln.status == 'Success'
+        )
+        any_partial = any(
+            ln.reconciliation_status in ('Partial', 'Reconciled')
+            for ln in self.line_ids
+        )
+
+        if all_reconciled:
+            self.db_set('reconciliation_status', 'Reconciled')
+        elif any_partial:
+            self.db_set('reconciliation_status', 'Partial')
 
     def action_retry(self):
-        self.ensure_one()
-        if self.status not in ('failed','processing','part_success'):
-            raise UserError(_('Only failed/processing batches can be retried.'))
-        self.env['finapify.job'].sudo().enqueue_retry(self._name, self.id)
+        if self.status not in ('Failed', 'Processing', 'Part Success'):
+            frappe.throw(_('Only Failed/Processing batches can be retried.'))
+        frappe.get_doc({
+            'doctype': 'Finapify Job',
+            'company': self.company,
+            'job_type': 'Retry Payment',
+            'ref_model': self.doctype,
+            'ref_id': self.name,
+            'run_at': frappe.utils.now(),
+        }).insert(ignore_permissions=True)
         self._log('retry', 'info', 'Enqueued retry job')
 
     def action_retry_reconcile(self):
-        self.ensure_one()
-        self.env['finapify.job'].sudo().enqueue_reconcile(self._name, self.id)
+        frappe.get_doc({
+            'doctype': 'Finapify Job',
+            'company': self.company,
+            'job_type': 'Reconcile',
+            'ref_model': self.doctype,
+            'ref_id': self.name,
+            'run_at': frappe.utils.now(),
+        }).insert(ignore_permissions=True)
         self._log('reconcile', 'info', 'Enqueued reconcile job')
 
 
-class FinapifyPaymentBatchLine(models.Model):
-    _name = 'finapify.payment.batch.line'
-    _description = 'Finapify Payment Batch Line'
-    _order = 'id'
-
-    batch_id = fields.Many2one('finapify.payment.batch', required=True, ondelete='cascade')
-    vendor_bill_id = fields.Many2one('account.move', required=True, domain=[('move_type', 'in', ('in_invoice','in_refund'))])
-    vendor_id = fields.Many2one('res.partner', related='vendor_bill_id.partner_id', store=True)
-
-    amount = fields.Monetary(required=True)
-    currency_id = fields.Many2one('res.currency', required=True, default=lambda self: self.env.company.currency_id)
-
-    vendor_bank_id = fields.Char(required=True)
-    source_bank_id = fields.Char(required=True)
-
-    status = fields.Selection([
-        ('pending','Pending'),
-        ('submitted','Submitted'),
-        ('processing','Processing'),
-        ('success','Success'),
-        ('failed','Failed'),
-    ], default='pending', index=True)
-
-    finapify_ref = fields.Char(index=True)
-    created_payment_ids = fields.Many2many('account.payment', string='Created Payments')
-
-    reconciliation_status = fields.Selection([
-        ('not_started','Not started'),
-        ('partial','Partial'),
-        ('reconciled','Reconciled'),
-    ], default='not_started', index=True)
-
-    last_error = fields.Text()
+class FinapifyPaymentBatchLine(Document):
 
     def _apply_success_result(self, result: dict):
-        self.ensure_one()
         fin_ref = result.get('finapify_ref')
         paid_amount = float(result.get('paid_amount') or self.amount)
 
-        self.write({'status': 'success', 'finapify_ref': fin_ref})
+        self.db_set('status', 'Success')
+        self.db_set('finapify_ref', fin_ref)
 
-        # global txn idempotency
-        if fin_ref:
-            existing_txn = self.env['finapify.txn'].search([
-                ('company_id','=', self.batch_id.company_id.id),
-                ('finapify_ref','=', fin_ref)
-            ], limit=1)
-            if existing_txn and existing_txn.payment_ids:
-                self.write({'created_payment_ids': [(6, 0, existing_txn.payment_ids.ids)]})
-                return
+        batch = frappe.get_doc('Finapify Payment Batch', self.parent)
 
-        payments = self._create_payment_for_success(paid_amount, fin_ref)
+        if fin_ref and frappe.db.exists('Finapify Txn', {'company': batch.company, 'finapify_ref': fin_ref}):
+            return
+
+        payment = self._create_payment_for_success(paid_amount, fin_ref, batch)
 
         if fin_ref:
-            self.env['finapify.txn'].sudo().create({
-                'company_id': self.batch_id.company_id.id,
+            frappe.get_doc({
+                'doctype': 'Finapify Txn',
+                'company': batch.company,
                 'finapify_ref': fin_ref,
-                'request_model': self.batch_id._name,
-                'request_id': self.batch_id.id,
-                'payment_ids': [(6, 0, payments.ids)],
-            })
+                'request_model': batch.doctype,
+                'request_id': batch.name,
+            }).insert(ignore_permissions=True)
 
-        self.write({'created_payment_ids': [(6, 0, payments.ids)]})
+        if payment:
+            self.db_set('created_payment', payment.name)
 
-    def _create_payment_for_success(self, paid_amount: float, finapify_ref: str):
-        self.ensure_one()
-        jm = self.env['finapify.journal.map'].search([
-            ('company_id','=', self.batch_id.company_id.id),
-            ('finapify_source_bank_id','=', self.source_bank_id),
-            ('active','=', True)
-        ], limit=1)
+    def _create_payment_for_success(self, paid_amount: float, finapify_ref: str, batch):
+        jm = frappe.db.get_value(
+            'Finapify Journal Map',
+            {'company': batch.company, 'finapify_source_bank_id': self.source_bank_id},
+            ['name', 'mode_of_payment', 'bank_account'],
+            as_dict=True
+        )
         if not jm:
-            raise UserError(_("Missing journal mapping for source bank_id: %s") % self.source_bank_id)
+            frappe.throw(_('Missing journal mapping for source bank_id: %s') % self.source_bank_id)
 
-        journal = jm.journal_id
-        pml = journal.outbound_payment_method_line_ids[:1]
-        if not pml:
-            raise UserError(_('No outbound payment method line found on the selected journal.'))
+        ref = f"Finapify {finapify_ref or ''} {self.vendor_bill}".strip()
 
-        ref = f"Finapify {finapify_ref or ''} {self.vendor_bill_id.name}".strip()
-
-        payment = self.env['account.payment'].create({
-            'company_id': self.batch_id.company_id.id,
-            'payment_type': 'outbound',
-            'partner_type': 'supplier',
-            'partner_id': self.vendor_id.id,
-            'amount': paid_amount,
-            'currency_id': self.currency_id.id,
-            'journal_id': journal.id,
-            'payment_method_line_id': pml.id,
-            'ref': ref,
+        payment = frappe.new_doc('Payment Entry')
+        payment.payment_type = 'Pay'
+        payment.party_type = 'Supplier'
+        payment.party = self.vendor
+        payment.company = batch.company
+        payment.posting_date = frappe.utils.today()
+        payment.paid_amount = paid_amount
+        payment.received_amount = paid_amount
+        payment.mode_of_payment = jm.mode_of_payment
+        if jm.bank_account:
+            payment.bank_account = jm.bank_account
+        payment.reference_no = ref
+        payment.reference_date = frappe.utils.today()
+        payment.append('references', {
+            'reference_doctype': 'Purchase Invoice',
+            'reference_name': self.vendor_bill,
+            'allocated_amount': paid_amount,
         })
-        payment.action_post()
+        payment.insert(ignore_permissions=True)
+        payment.submit()
         return payment
 
     def _attempt_reconcile(self):
-        self.ensure_one()
-        bill = self.vendor_bill_id
-        if not self.created_payment_ids:
-            self.write({'reconciliation_status': 'not_started'})
-            return
-
         try:
-            bill_lines = bill.line_ids.filtered(lambda l: l.account_id.account_type == 'liability_payable' and not l.reconciled)
-            pay_lines = self.created_payment_ids.line_ids.filtered(lambda l: l.account_id.account_type == 'liability_payable' and not l.reconciled)
-            lines = (bill_lines | pay_lines)
-            if lines:
-                lines.reconcile()
-
-            if bill.amount_residual == 0:
-                self.write({'reconciliation_status': 'reconciled'})
+            bill = frappe.get_doc('Purchase Invoice', self.vendor_bill)
+            if not bill.outstanding_amount or bill.outstanding_amount == 0:
+                self.db_set('reconciliation_status', 'Reconciled')
             else:
-                self.write({'reconciliation_status': 'partial'})
+                self.db_set('reconciliation_status', 'Partial')
         except Exception as e:
-            self.write({'reconciliation_status': 'partial', 'last_error': str(e)})
+            self.db_set('reconciliation_status', 'Partial')
+            self.db_set('last_error', str(e))
