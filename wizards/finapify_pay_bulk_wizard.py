@@ -1,98 +1,89 @@
-from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+import frappe
+from frappe import _
+from frappe.model.document import Document
 
 
-class FinapifyPayBulkWizard(models.TransientModel):
-    _name = 'finapify.pay.bulk.wizard'
-    _description = 'Bulk Pay Vendor Bills with Finapify'
+class FinapifyPayBulkWizard(Document):
 
-    company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company)
+    def before_insert(self):
+        active_ids = frappe.flags.get('active_ids') or []
+        if active_ids and not self.bill_ids:
+            bills = frappe.get_list(
+                'Purchase Invoice',
+                filters={'name': ['in', active_ids], 'docstatus': 1},
+                fields=['name', 'company', 'currency', 'outstanding_amount'],
+            )
+            if bills:
+                self.company = bills[0].company
+                self.currency = bills[0].currency
+                for b in bills:
+                    self.append('bill_ids', {'purchase_invoice': b.name})
 
-    mode = fields.Selection([('one_bank','One bank'),('multi_bank','Multi bank')], default='one_bank', required=True)
-    source_bank_id = fields.Char(string='Default Payer Bank ID')
-
-    otp = fields.Char(string='OTP', required=True)
-
-    bill_ids = fields.Many2many('account.move', string='Vendor Bills', required=True)
-
-    def _get_active_bills(self):
-        ids = self.env.context.get('active_ids') or []
-        bills = self.env['account.move'].browse(ids).exists()
-        bills = bills.filtered(lambda m: m.move_type in ('in_invoice','in_refund'))
-        return bills
-
-    @api.model
-    def default_get(self, fields_list):
-        res = super().default_get(fields_list)
-        bills = self._get_active_bills()
-        if bills:
-            res['company_id'] = bills[0].company_id.id
-            res['bill_ids'] = [(6, 0, bills.ids)]
-
-            conn = self.env['finapify.connection'].search([
-                ('company_id','=', bills[0].company_id.id),
-                ('user_id','=', self.env.user.id),
-            ], limit=1)
-            if conn and conn.default_source_bank_id:
-                res['source_bank_id'] = conn.default_source_bank_id
-        return res
+                conn_name = frappe.db.get_value(
+                    'Finapify Connection',
+                    {'company': bills[0].company, 'user': frappe.session.user},
+                    'name'
+                )
+                if conn_name:
+                    conn = frappe.get_doc('Finapify Connection', conn_name)
+                    if conn.default_source_bank_id:
+                        self.source_bank_id = conn.default_source_bank_id
 
     def action_pay_bulk(self):
-        self.ensure_one()
-        bills = self.bill_ids
-        if not bills:
-            raise UserError(_('Select at least one vendor bill.'))
-        if len(set(bills.mapped('company_id').ids)) > 1:
-            raise UserError(_('All selected bills must belong to the same company.'))
+        bill_names = [row.purchase_invoice for row in self.bill_ids]
+        if not bill_names:
+            frappe.throw(_('Select at least one vendor bill.'))
 
-        # validate
+        bills = [frappe.get_doc('Purchase Invoice', n) for n in bill_names]
+
+        companies = {b.company for b in bills}
+        if len(companies) > 1:
+            frappe.throw(_('All selected bills must belong to the same company.'))
+
         for b in bills:
-            if b.state != 'posted':
-                raise UserError(_("Bill %s must be posted.") % b.display_name)
-            if b.amount_residual <= 0:
-                raise UserError(_("Bill %s has no residual.") % b.display_name)
+            if b.docstatus != 1:
+                frappe.throw(_('Bill %s must be submitted.') % b.name)
+            if not b.outstanding_amount or b.outstanding_amount <= 0:
+                frappe.throw(_('Bill %s has no outstanding amount.') % b.name)
 
-        batch = self.env['finapify.payment.batch'].create({
-            'company_id': bills[0].company_id.id,
-            'mode': self.mode,
+        company = bills[0].company
+
+        batch = frappe.get_doc({
+            'doctype': 'Finapify Payment Batch',
+            'company': company,
+            'mode': self.mode or 'one_bank',
             'source_bank_id': self.source_bank_id,
-            'currency_id': bills[0].currency_id.id,
-            'otp_required': True,
-            'status': 'otp_pending',
+            'currency': bills[0].currency,
+            'otp_required': 1,
+            'status': 'OTP Pending',
         })
 
-        # create lines
         for b in bills:
-            m = self.env['finapify.vendor.bank.map'].search([
-                ('company_id','=', b.company_id.id),
-                ('partner_id','=', b.partner_id.id),
-            ], limit=1)
-            if not m:
-                raise UserError(_("Missing Finapify Vendor Bank ID for vendor: %s") % b.partner_id.name)
+            vendor_bank_id = frappe.db.get_value(
+                'Finapify Vendor Bank Map',
+                {'company': b.company, 'supplier': b.supplier},
+                'finapify_vendor_bank_id'
+            )
+            if not vendor_bank_id:
+                frappe.throw(_('Missing Finapify Vendor Bank ID for vendor: %s') % b.supplier)
 
-            # choose source bank per line
-            sb = self.source_bank_id
-            if not sb:
-                raise UserError(_('Select a payer bank id.'))
+            if not self.source_bank_id:
+                frappe.throw(_('Select a payer bank ID.'))
 
-            self.env['finapify.payment.batch.line'].create({
-                'batch_id': batch.id,
-                'vendor_bill_id': b.id,
-                'amount': b.amount_residual,
-                'currency_id': b.currency_id.id,
-                'vendor_bank_id': m.finapify_vendor_bank_id,
-                'source_bank_id': sb,
-                'status': 'pending',
+            batch.append('line_ids', {
+                'vendor_bill': b.name,
+                'vendor': b.supplier,
+                'amount': b.outstanding_amount,
+                'currency': b.currency,
+                'vendor_bank_id': vendor_bank_id,
+                'source_bank_id': self.source_bank_id,
+                'status': 'Pending',
             })
 
-        batch.write({'bill_ids': [(6, 0, bills.ids)]})
+        batch.insert(ignore_permissions=True)
         batch.action_submit_to_n8n(self.otp)
 
         return {
-            'type': 'ir.actions.act_window',
-            'name': _('Finapify Payment Batch'),
-            'res_model': 'finapify.payment.batch',
-            'res_id': batch.id,
-            'view_mode': 'form',
-            'target': 'current',
+            'doctype': 'Finapify Payment Batch',
+            'name': batch.name,
         }
