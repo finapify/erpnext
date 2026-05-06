@@ -32,16 +32,16 @@ scheduler_events = {
     ],
 }
 
+# Fixtures — export Module Def so the module is registered on install
+fixtures = [
+    {"dt": "Module Def", "filters": [["module_name", "=", "Finapify Payments"]]},
+]
+
 # Jinja
 jinja = {
     "methods": [],
     "filters": [],
 }
-
-# Include CSS
-app_include_css = [
-    "/assets/finapify_payments/css/finapify_dashboard.css"
-]
 
 # Website Route Rules — callback is exposed via @frappe.whitelist(allow_guest=True)
 # accessible at /api/method/finapify_payments.controllers.main.finapify_callback

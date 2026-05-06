@@ -1,0 +1,39 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "vendor_bill", "vendor", "col1",
+  "amount", "currency",
+  "source_bank_id", "vendor_bank_id"
+ ],
+ "fields": [
+  {"fieldname": "vendor_bill", "fieldtype": "Link", "label": "Vendor Bill",
+   "options": "Purchase Invoice", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "vendor", "fieldtype": "Link", "label": "Vendor",
+   "options": "Supplier", "fetch_from": "vendor_bill.supplier",
+   "read_only": 1, "in_list_view": 1},
+  {"fieldname": "col1", "fieldtype": "Column Break"},
+  {"fieldname": "amount", "fieldtype": "Currency", "label": "Amount",
+   "options": "currency", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "currency", "fieldtype": "Link", "label": "Currency",
+   "options": "Currency", "fetch_from": "vendor_bill.currency"},
+  {"fieldname": "source_bank_id", "fieldtype": "Data",
+   "label": "Payer Bank ID", "in_list_view": 1},
+  {"fieldname": "vendor_bank_id", "fieldtype": "Data",
+   "label": "Vendor Bank ID", "in_list_view": 1}
+ ],
+ "istable": 1,
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Finapify Payments",
+ "name": "Finapify Bulk Bill Row",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

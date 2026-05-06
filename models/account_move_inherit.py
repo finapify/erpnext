@@ -13,7 +13,7 @@ class FinapifyPurchaseInvoice(_base):
     """Extends Purchase Invoice with Finapify payment action."""
 
     def action_finapify_pay(self):
-        if self.move_type not in ('in_invoice', 'in_refund') and self.doctype != 'Purchase Invoice':
+        if self.doctype != 'Purchase Invoice':
             frappe.throw(_('Pay with Finapify is only available for vendor bills.'))
 
         if self.docstatus == 0:
