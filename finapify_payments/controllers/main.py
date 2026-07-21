@@ -3,7 +3,7 @@ import json
 import frappe
 from frappe import _
 
-from ..models.utils import hmac_sha256_hex, safe_json_dumps
+from ..models.utils import hmac_sha256_hex, safe_json_dumps, get_finapify_secret
 
 
 @frappe.whitelist(allow_guest=True)
@@ -11,7 +11,7 @@ def finapify_callback():
     """Receive async payment result from n8n and apply to matching request/batch."""
     try:
         raw = frappe.request.data or b''
-        secret = frappe.db.get_single_value('Finapify Settings', 'callback_secret') or ''
+        secret = get_finapify_secret('callback_secret')
         sig = frappe.get_request_header('X-Finapify-Signature') or ''
 
         if secret:

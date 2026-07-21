@@ -2,13 +2,16 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
-from .utils import encrypt_text, decrypt_text, generate_uuid, safe_json_dumps, http_post_json
+from .utils import (
+    encrypt_text, decrypt_text, generate_uuid, safe_json_dumps, http_post_json,
+    get_finapify_secret,
+)
 
 
 class FinapifyConnection(Document):
 
     def _get_callback_secret(self):
-        secret = frappe.db.get_single_value('Finapify Settings', 'callback_secret')
+        secret = get_finapify_secret('callback_secret')
         if not secret:
             secret = generate_uuid().replace('-', '')
             frappe.db.set_value('Finapify Settings', 'Finapify Settings', 'callback_secret', secret)
@@ -22,6 +25,7 @@ class FinapifyConnection(Document):
         secret = self._get_callback_secret()
         return decrypt_text(self.supabase_jwt_encrypted or '', secret)
 
+    @frappe.whitelist()
     def action_disconnect(self):
         self.db_set('supabase_user_id', '')
         self.db_set('consent_id', '')
@@ -32,13 +36,14 @@ class FinapifyConnection(Document):
         self.db_set('state', 'Disconnected')
         self.db_set('error_message', '')
 
+    @frappe.whitelist()
     def action_refresh_accounts(self):
         if not self.is_connected:
             frappe.throw(_('Connect Finapify first.'))
 
         n8n_url = (
             frappe.db.get_single_value('Finapify Settings', 'n8n_url')
-            or 'https://n8n.finapify.com/webhook-test/odoo'
+            or 'https://n8n.finapify.com/webhook-test/erpnext'
         )
 
         jwt = self.get_supabase_jwt()

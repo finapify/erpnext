@@ -14,7 +14,7 @@
   {"fieldname": "api_url", "fieldtype": "Data", "label": "API Base URL",
    "default": "https://api.finapify.com/webhook/erpnext"},
   {"fieldname": "n8n_url", "fieldtype": "Data", "label": "n8n Webhook URL",
-   "default": "https://n8n.finapify.com/webhook-test/odoo"},
+   "default": "https://n8n.finapify.com/webhook-test/erpnext"},
   {"fieldname": "cb_section", "fieldtype": "Section Break", "label": "Callback"},
   {"fieldname": "callback_secret", "fieldtype": "Password", "label": "Callback HMAC Secret"},
   {"fieldname": "auth_section", "fieldtype": "Section Break", "label": "Authentication Status"},
@@ -22,7 +22,7 @@
   {"fieldname": "last_auth_at", "fieldtype": "Datetime", "label": "Last Authenticated At", "read_only": 1},
   {"fieldname": "auth_error", "fieldtype": "Text", "label": "Last Auth Error", "read_only": 1}
  ],
- "is_single": 1,
+ "issingle": 1,
  "modified": "2024-01-01 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Finapify Payments",

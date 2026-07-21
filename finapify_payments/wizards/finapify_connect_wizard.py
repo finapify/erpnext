@@ -5,6 +5,7 @@ from frappe.model.document import Document
 
 class FinapifyConnectWizard(Document):
 
+    @frappe.whitelist()
     def action_connect(self):
         name = frappe.db.get_value(
             'Finapify Connection',

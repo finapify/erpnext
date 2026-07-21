@@ -11,23 +11,7 @@ class FinapifyBankStatement(Document):
         if self.date_from and self.date_to and str(self.date_from) > str(self.date_to):
             frappe.throw(_('From Date cannot be after To Date.'))
 
-    def get_bank_selection(self):
-        conn = frappe.db.get_value(
-            'Finapify Connection',
-            {'company': self.company},
-            'bank_accounts_json'
-        )
-        if not conn:
-            return []
-        try:
-            accounts = json.loads(conn)
-            return [
-                (acc.get('bank_id'), f"{acc.get('bank_name', 'Unknown')} ({acc.get('account_number', '')})")
-                for acc in accounts
-            ]
-        except Exception:
-            return []
-
+    @frappe.whitelist()
     def get_available_banks(self):
         conn = frappe.db.get_value(
             'Finapify Connection',
@@ -48,6 +32,7 @@ class FinapifyBankStatement(Document):
         except Exception:
             return []
 
+    @frappe.whitelist()
     def fetch_bank_statement(self):
         import requests
 
@@ -174,16 +159,19 @@ class FinapifyBankStatement(Document):
             self.db_set('error_message', str(e))
             frappe.throw(_('Error: %s') % str(e))
 
+    @frappe.whitelist()
     def action_reload_statement(self):
         self.db_set('state', 'Draft')
         return self.fetch_bank_statement()
 
+    @frappe.whitelist()
     def action_set_draft(self):
         self.db_set('state', 'Draft')
 
 
 class FinapifyBankStatementLine(Document):
 
+    @frappe.whitelist()
     def action_match_payment(self):
         return {
             'doctype': 'Payment Entry',

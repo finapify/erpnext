@@ -141,22 +141,26 @@ finapify_payments/
 
 ### After (Pure Frappe)
 ```
-finapify_payments/
-├── hooks.py (Frappe)
-├── setup.py (Frappe setup)
-├── __init__.py
-├── models/
-│   ├── finapify_connection.py (Frappe Document)
-│   ├── finapify_payment_request.py (Frappe Document)
-│   └── ...
-├── controllers/
-│   ├── main.py (Frappe whitelist methods)
-│   └── ...
-├── wizards/ (Frappe wizards)
-├── views/ (Frappe views)
-├── data/ (Frappe data)
+finapify_payments/                  (repo root)
+├── setup.py (Python packaging)
 ├── README.md
-└── INSTALLATION.md
+├── INSTALLATION.md
+└── finapify_payments/              (app package)
+    ├── hooks.py (Frappe)
+    ├── modules.txt
+    ├── setup.py (after_install hook)
+    ├── __init__.py
+    ├── models/
+    │   ├── finapify_connection.py (Frappe Document)
+    │   ├── finapify_payment_request.py (Frappe Document)
+    │   └── ...
+    ├── controllers/
+    │   ├── main.py (Frappe whitelist methods)
+    │   └── ...
+    ├── wizards/ (Frappe wizard Documents)
+    ├── doctype/ (DocType JSON + controller per doctype)
+    ├── fixtures/
+    └── workspace/
 ```
 
 ## Import Changes Summary
@@ -232,7 +236,7 @@ grep -r "from odoo import" ~/frappe-bench/apps/finapify_payments/
 grep -r "models.Model" ~/frappe-bench/apps/finapify_payments/
 ```
 
-### 2. **Check for Syntax Errors**
+### 2. **Run the Sanity Check**
 ```bash
 cd ~/frappe-bench
 bench --site site1.local execute finapify_payments.setup.test_finapify_connection
@@ -253,37 +257,30 @@ bench --site site1.local clear-cache
 
 ## Remaining Tasks
 
+### Done
+
+- Doctype JSON files exist for every model, with role-based permissions
+  (`Accounts User` / `Accounts Manager` / `System Manager`).
+- Server-side actions (`action_finapify_pay`, `action_submit_to_n8n`,
+  `action_pay`, `action_pay_bulk`, `action_connect`, etc.) are implemented
+  and `@frappe.whitelist()`-decorated, so they're callable via
+  `frappe.call`/REST.
+- Background jobs are configured via `scheduler_events` in `hooks.py`
+  (queued retries, daily account sync, weekly reconciliation).
+- Audit logging (`Finapify Log`) is wired into every action.
+
 ### Before Production Deployment
 
-1. **Create Doctype JSON Files**
-   - Define field types and validation rules
-   - Add custom buttons and actions
-   - Configure access control
-
-2. **Add Security Customizations**
-   - Create role-based permissions
-   - Add document-level security
-   - Configure audit trail
-
-3. **Create Views (XMLs)**
-   - List views
-   - Form views
-   - Report views
-
-4. **Add Custom Fields**
-   - Extend Account Move with Finapify fields
-   - Extend Purchase Order with payment options
-   - Extend Res Partner with bank details
-
-5. **Setup Background Jobs**
-   - Configure scheduled cron jobs
-   - Setup background workers for retries
-   - Configure logging
-
-6. **Create Integration Tests**
-   - Test payment flows
-   - Test callback handling
-   - Test error scenarios
+1. **Add Desk client scripts / buttons** - No JS exists yet for the "Pay
+   with Finapify" buttons on Purchase Invoice/Purchase Order or for the
+   wizard forms; the whitelisted methods work but need UI hookup.
+2. **Build a dashboard page** - `Finapify Dashboard` doctype and
+   `get_dashboard_data` exist but aren't linked into the workspace or a
+   Desk page yet.
+3. **Create Integration Tests**
+   - Test payment flows end-to-end against a sandboxed n8n endpoint
+   - Test callback handling (HMAC signature, idempotency)
+   - Test error/retry scenarios
 
 ## Troubleshooting Migration
 

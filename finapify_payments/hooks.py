@@ -18,6 +18,11 @@ override_doctype_class = {
     "Supplier": "finapify_payments.models.res_partner_inherit.FinapifySupplier",
 }
 
+# Client-side scripts injected into standard ERPNext doctype forms
+doctype_js = {
+    "Purchase Invoice": "public/js/purchase_invoice.js",
+}
+
 # Scheduled Tasks
 scheduler_events = {
     "all": [

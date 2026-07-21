@@ -15,9 +15,8 @@ class FinapifyPayBulkWizard(Document):
             )
             if bills:
                 self.company = bills[0].company
-                self.currency = bills[0].currency
                 for b in bills:
-                    self.append('bill_ids', {'purchase_invoice': b.name})
+                    self.append('bill_ids', {'vendor_bill': b.name})
 
                 conn_name = frappe.db.get_value(
                     'Finapify Connection',
@@ -29,8 +28,9 @@ class FinapifyPayBulkWizard(Document):
                     if conn.default_source_bank_id:
                         self.source_bank_id = conn.default_source_bank_id
 
+    @frappe.whitelist()
     def action_pay_bulk(self):
-        bill_names = [row.purchase_invoice for row in self.bill_ids]
+        bill_names = [row.vendor_bill for row in self.bill_ids]
         if not bill_names:
             frappe.throw(_('Select at least one vendor bill.'))
 
@@ -81,7 +81,7 @@ class FinapifyPayBulkWizard(Document):
             })
 
         batch.insert(ignore_permissions=True)
-        batch.action_submit_to_n8n(self.otp)
+        batch.action_submit_to_n8n(self.get_password('otp', raise_exception=False))
 
         return {
             'doctype': 'Finapify Payment Batch',

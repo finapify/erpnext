@@ -19,3 +19,20 @@ def _create_default_settings():
             frappe.db.commit()
     except Exception as e:
         frappe.log_error(str(e), "Finapify after_install")
+
+
+def test_finapify_connection():
+    """Sanity check run via `bench execute finapify_payments.setup.test_finapify_connection`."""
+    if not frappe.db.exists('Finapify Settings', 'Finapify Settings'):
+        print("FAIL: Finapify Settings singleton does not exist. Run after_install first.")
+        return False
+
+    settings = frappe.get_single('Finapify Settings')
+    if not settings.callback_secret:
+        print("FAIL: Finapify Settings has no callback_secret configured.")
+        return False
+
+    print("OK: Finapify Settings is present and configured.")
+    print(f"  is_authenticated: {bool(settings.is_authenticated)}")
+    print(f"  api_url: {settings.api_url}")
+    return True

@@ -55,7 +55,7 @@ class FinapifyDashboard(Document):
     def get_authentication_status(self):
         return {
             'is_authenticated': frappe.db.get_single_value('Finapify Settings', 'is_authenticated') or False,
-            'api_key': frappe.db.get_single_value('Finapify Settings', 'api_key') or '',
+            'has_api_key': bool(frappe.db.get_single_value('Finapify Settings', 'api_key')),
             'api_url': frappe.db.get_single_value('Finapify Settings', 'api_url') or 'https://api.finapify.com/webhook/erpnext',
             'last_auth_at': frappe.db.get_single_value('Finapify Settings', 'last_auth_at') or '',
             'auth_error': frappe.db.get_single_value('Finapify Settings', 'auth_error') or '',

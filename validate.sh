@@ -69,9 +69,9 @@ echo ""
 
 # Test 5: Check hooks.py exists
 echo -e "${BLUE}[TEST 5]${NC} Checking hooks.py..."
-if [ -f "$APP_PATH/hooks.py" ]; then
+if [ -f "$APP_PATH/$APP_NAME/hooks.py" ]; then
     echo -e "${GREEN}✓${NC} hooks.py found"
-    if grep -q "app_name" "$APP_PATH/hooks.py"; then
+    if grep -q "app_name" "$APP_PATH/$APP_NAME/hooks.py"; then
         echo -e "${GREEN}✓${NC} app_name configured"
     else
         echo -e "${RED}✗${NC} app_name not configured in hooks.py"
@@ -81,11 +81,20 @@ else
 fi
 echo ""
 
-# Test 6: Check setup.py exists
+# Test 5b: Check modules.txt exists
+echo -e "${BLUE}[TEST 5b]${NC} Checking modules.txt..."
+if [ -f "$APP_PATH/$APP_NAME/modules.txt" ]; then
+    echo -e "${GREEN}✓${NC} modules.txt found"
+else
+    echo -e "${RED}✗${NC} modules.txt not found (app will not register its module)"
+fi
+echo ""
+
+# Test 6: Check setup.py (after_install hooks) exists
 echo -e "${BLUE}[TEST 6]${NC} Checking setup.py..."
-if [ -f "$APP_PATH/setup.py" ]; then
+if [ -f "$APP_PATH/$APP_NAME/setup.py" ]; then
     echo -e "${GREEN}✓${NC} setup.py found"
-    if grep -q "after_install" "$APP_PATH/setup.py"; then
+    if grep -q "after_install" "$APP_PATH/$APP_NAME/setup.py"; then
         echo -e "${GREEN}✓${NC} after_install function found"
     else
         echo -e "${YELLOW}!${NC} after_install function not found"

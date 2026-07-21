@@ -12,6 +12,7 @@ except ImportError:
 class FinapifyPurchaseOrder(_base):
     """Extends Purchase Order with Finapify payment action."""
 
+    @frappe.whitelist()
     def action_finapify_pay(self):
         if self.status not in ('To Receive and Bill', 'To Bill', 'Completed'):
             frappe.throw(_('Purchase order must be confirmed before payment.'))

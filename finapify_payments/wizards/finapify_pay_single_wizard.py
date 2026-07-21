@@ -31,6 +31,7 @@ class FinapifyPaySingleWizard(Document):
             if vendor_map:
                 self.vendor_bank_id = vendor_map
 
+    @frappe.whitelist()
     def action_pay(self):
         if not self.vendor_bill:
             frappe.throw(_('Vendor bill is required.'))
@@ -55,7 +56,7 @@ class FinapifyPaySingleWizard(Document):
             'status': 'OTP Pending',
         })
         req.insert(ignore_permissions=True)
-        req.action_submit_to_n8n(self.otp)
+        req.action_submit_to_n8n(self.get_password('otp', raise_exception=False))
 
         return {
             'doctype': 'Finapify Payment Request',

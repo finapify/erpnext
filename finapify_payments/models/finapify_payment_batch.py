@@ -8,24 +8,25 @@ from .utils import (
 )
 
 
-class FinapifyPaymentRequest(Document):
+class FinapifyPaymentBatch(Document):
 
     def _log(self, action, level='info', message=None, req=None, resp=None):
         try:
             frappe.get_doc({
                 'doctype': 'Finapify Log',
                 'company': self.company,
+                'user': frappe.session.user,
                 'correlation_id': self.correlation_id or '',
                 'model': self.doctype,
                 'record_id': self.name,
                 'action': action,
                 'level': level,
                 'message': message or '',
-                'request_json': safe_json_dumps(mask_secrets(req or {})) if req else '',
-                'response_json': safe_json_dumps(resp) if resp else '',
+                'request_json': safe_json_dumps(req or {}) if req else '',
+                'response_json': safe_json_dumps(resp or {}) if resp else '',
             }).insert(ignore_permissions=True)
         except Exception as e:
-            frappe.log_error(f"Error logging payment request: {e}", 'Finapify Log Error')
+            frappe.log_error(f"Error logging batch: {e}", 'Finapify Log Error')
 
     def _get_connection(self):
         name = frappe.db.get_value(
@@ -35,7 +36,6 @@ class FinapifyPaymentRequest(Document):
         )
         if not name:
             frappe.throw(_('Finapify is not connected for this user/company.'))
-
         conn = frappe.get_doc('Finapify Connection', name)
         if not conn.is_connected:
             frappe.throw(_('Finapify is not connected for this user/company.'))
@@ -44,41 +44,48 @@ class FinapifyPaymentRequest(Document):
     def _get_n8n_url(self):
         return (
             frappe.db.get_single_value('Finapify Settings', 'n8n_url')
-            or 'https://n8n.finapify.com/webhook-test/odoo'
+            or 'https://n8n.finapify.com/webhook-test/erpnext'
         )
 
     def _compute_idempotency_key(self):
-        base = f"single|{self.company}|{self.vendor_bill}|{self.amount}|{self.currency}|{self.source_bank_id}|{self.vendor_bank_id}"
-        return sha256_hex(base)
+        parts = ['bulk', self.company, self.mode, self.currency, str(self.total_amount)]
+        for ln in self.line_ids:
+            parts.append(f"{ln.vendor_bill}:{ln.amount}:{ln.source_bank_id}:{ln.vendor_bank_id}")
+        return sha256_hex('|'.join(parts))
 
+    @frappe.whitelist()
     def action_submit_to_n8n(self, otp_value: str):
         check_finapify_authenticated()
 
         if self.status not in ('Draft', 'Review', 'OTP Pending', 'Failed'):
-            frappe.throw(_('This request cannot be submitted in current state.'))
+            frappe.throw(_('This batch cannot be submitted in current state.'))
 
-        bill = frappe.get_doc('Purchase Invoice', self.vendor_bill)
-        if bill.docstatus != 1:
-            frappe.throw(_('Vendor bill must be submitted before payment.'))
-        if not bill.outstanding_amount or bill.outstanding_amount <= 0:
-            frappe.throw(_('Vendor bill has no outstanding amount.'))
+        if not self.line_ids:
+            frappe.throw(_('No lines to pay.'))
 
         conn = self._get_connection()
         jwt = conn.get_supabase_jwt()
         if not jwt:
-            frappe.throw(_('Supabase JWT missing. Reconnect Finapify.'))
+            frappe.throw(_('Supabase JWT missing.'))
 
-        jm = frappe.db.get_value(
-            'Finapify Journal Map',
-            {'company': self.company, 'finapify_source_bank_id': self.source_bank_id},
-            'name'
-        )
-        if not jm:
-            frappe.throw(_('Map this Finapify Source Bank ID to a Mode of Payment in Finapify Settings.'))
+        source_bank_ids = {ln.source_bank_id for ln in self.line_ids}
+        for sb in source_bank_ids:
+            if not frappe.db.exists('Finapify Journal Map', {'company': self.company, 'finapify_source_bank_id': sb}):
+                frappe.throw(_('Missing journal mapping for source bank_id: %s') % sb)
 
         correlation_id = self.correlation_id or generate_uuid()
         idem = self.idempotency_key or self._compute_idempotency_key()
         callback_url = f"{frappe.utils.get_url()}/api/method/finapify_payments.controllers.main.finapify_callback"
+
+        items = []
+        for ln in self.line_ids:
+            items.append({
+                'bill_id': ln.vendor_bill,
+                'vendor': ln.vendor,
+                'amount': float(ln.amount),
+                'vendor_bank_id': ln.vendor_bank_id,
+                'source_bank_id': ln.source_bank_id,
+            })
 
         payload = {
             'product': 'frappe',
@@ -93,18 +100,12 @@ class FinapifyPaymentRequest(Document):
             },
             'otp': {'required': bool(self.otp_required), 'value': otp_value or ''},
             'payment': {
-                'mode': 'single',
+                'mode': 'bulk',
                 'currency': self.currency,
-                'total_amount': float(self.amount),
+                'total_amount': float(self.total_amount),
                 'reference': self.name,
             },
-            'items': [{
-                'bill_id': self.vendor_bill,
-                'vendor': self.vendor,
-                'amount': float(self.amount),
-                'vendor_bank_id': self.vendor_bank_id,
-                'source_bank_id': self.source_bank_id,
-            }],
+            'items': items,
             'callback': {
                 'url': callback_url,
                 'signature_type': 'hmac_sha256',
@@ -118,9 +119,9 @@ class FinapifyPaymentRequest(Document):
         self.db_set('idempotency_key', idem)
         self.db_set('request_payload_json', safe_json_dumps(payload))
         self.db_set('attempts', (self.attempts or 0) + 1)
-        self._log('initiate', 'info', 'Submitting payment to n8n', req=payload)
+        self._log('initiate', 'info', 'Submitting batch to n8n', req=payload)
 
-        status_code, data = http_post_json(self._get_n8n_url(), headers=headers, payload=payload, timeout_s=45)
+        status_code, data = http_post_json(self._get_n8n_url(), headers=headers, payload=payload, timeout_s=60)
 
         self.db_set('response_payload_json', safe_json_dumps(data))
         if data.get('n8n_request_id'):
@@ -135,9 +136,9 @@ class FinapifyPaymentRequest(Document):
         st = data.get('status')
         self._log('initiate', 'info', f'n8n status: {st}', resp=data)
 
-        if st == 'success':
+        if st in ('success', 'part_success'):
             self._apply_results_and_finalize(data)
-        elif st in ('processing', 'part_success'):
+        elif st == 'processing':
             self.db_set('status', 'Processing')
         else:
             self.db_set('status', 'Failed')
@@ -145,58 +146,115 @@ class FinapifyPaymentRequest(Document):
 
     def _apply_results_and_finalize(self, data: dict):
         results = data.get('results') or []
-        if not results:
-            self.db_set('status', 'Success')
-            return
+        any_failed = False
+        any_success = False
 
-        match = None
+        by_bill = {ln.vendor_bill: ln for ln in self.line_ids}
+
         for r in results:
-            if str(r.get('bill_id') or '') == str(self.vendor_bill):
-                match = r
-                break
+            bill_id = str(r.get('bill_id') or '')
+            ln = by_bill.get(bill_id)
+            if not ln:
+                continue
+            if r.get('status') == 'success':
+                any_success = True
+                ln._apply_success_result(r)
+            else:
+                any_failed = True
+                ln.db_set('status', 'Failed')
+                ln.db_set('last_error', r.get('message') or 'Failed')
 
-        if not match:
-            self.db_set('status', 'Processing')
-            return
-
-        if match.get('status') != 'success':
+        if any_success and any_failed:
+            self.db_set('status', 'Part Success')
+        elif any_success:
+            self.db_set('status', 'Success')
+        elif any_failed:
             self.db_set('status', 'Failed')
-            self.db_set('last_error', match.get('message') or 'Payment failed')
-            return
+        else:
+            self.db_set('status', 'Processing')
 
-        fin_ref = match.get('finapify_ref')
-        paid_amount = float(match.get('paid_amount') or self.amount)
-        self.db_set('finapify_ref', fin_ref)
+        for ln in self.line_ids:
+            if ln.status == 'Success':
+                ln._attempt_reconcile()
+
+        all_reconciled = all(
+            ln.reconciliation_status == 'Reconciled'
+            for ln in self.line_ids if ln.status == 'Success'
+        )
+        any_partial = any(
+            ln.reconciliation_status in ('Partial', 'Reconciled')
+            for ln in self.line_ids
+        )
+
+        if all_reconciled:
+            self.db_set('reconciliation_status', 'Reconciled')
+        elif any_partial:
+            self.db_set('reconciliation_status', 'Partial')
+
+    @frappe.whitelist()
+    def action_retry(self):
+        if self.status not in ('Failed', 'Processing', 'Part Success'):
+            frappe.throw(_('Only Failed/Processing batches can be retried.'))
+        frappe.get_doc({
+            'doctype': 'Finapify Job',
+            'company': self.company,
+            'job_type': 'Retry Payment',
+            'ref_model': self.doctype,
+            'ref_id': self.name,
+            'run_at': frappe.utils.now(),
+        }).insert(ignore_permissions=True)
+        self._log('retry', 'info', 'Enqueued retry job')
+
+    @frappe.whitelist()
+    def action_retry_reconcile(self):
+        frappe.get_doc({
+            'doctype': 'Finapify Job',
+            'company': self.company,
+            'job_type': 'Reconcile',
+            'ref_model': self.doctype,
+            'ref_id': self.name,
+            'run_at': frappe.utils.now(),
+        }).insert(ignore_permissions=True)
+        self._log('reconcile', 'info', 'Enqueued reconcile job')
+
+
+class FinapifyPaymentBatchLine(Document):
+
+    def _apply_success_result(self, result: dict):
+        fin_ref = result.get('finapify_ref')
+        paid_amount = float(result.get('paid_amount') or self.amount)
+
         self.db_set('status', 'Success')
+        self.db_set('finapify_ref', fin_ref)
 
-        if fin_ref and frappe.db.exists('Finapify Txn', {'company': self.company, 'finapify_ref': fin_ref}):
-            self._attempt_reconcile()
+        batch = frappe.get_doc('Finapify Payment Batch', self.parent)
+
+        if fin_ref and frappe.db.exists('Finapify Txn', {'company': batch.company, 'finapify_ref': fin_ref}):
             return
 
-        payment = self._create_payment_for_success(paid_amount, fin_ref)
+        payment = self._create_payment_for_success(paid_amount, fin_ref, batch)
 
         if fin_ref:
             frappe.get_doc({
                 'doctype': 'Finapify Txn',
-                'company': self.company,
+                'company': batch.company,
                 'finapify_ref': fin_ref,
-                'request_model': self.doctype,
-                'request_id': self.name,
+                'request_model': batch.doctype,
+                'request_id': batch.name,
             }).insert(ignore_permissions=True)
 
         if payment:
             self.db_set('created_payment', payment.name)
-        self._attempt_reconcile()
 
-    def _create_payment_for_success(self, paid_amount: float, finapify_ref: str):
+    def _create_payment_for_success(self, paid_amount: float, finapify_ref: str, batch):
         jm = frappe.db.get_value(
             'Finapify Journal Map',
-            {'company': self.company, 'finapify_source_bank_id': self.source_bank_id},
+            {'company': batch.company, 'finapify_source_bank_id': self.source_bank_id},
             ['name', 'mode_of_payment', 'bank_account'],
             as_dict=True
         )
         if not jm:
-            frappe.throw(_('Missing journal mapping for source bank ID.'))
+            frappe.throw(_('Missing journal mapping for source bank_id: %s') % self.source_bank_id)
 
         ref = f"Finapify {finapify_ref or ''} {self.vendor_bill}".strip()
 
@@ -204,7 +262,7 @@ class FinapifyPaymentRequest(Document):
         payment.payment_type = 'Pay'
         payment.party_type = 'Supplier'
         payment.party = self.vendor
-        payment.company = self.company
+        payment.company = batch.company
         payment.posting_date = frappe.utils.today()
         payment.paid_amount = paid_amount
         payment.received_amount = paid_amount
@@ -220,7 +278,6 @@ class FinapifyPaymentRequest(Document):
         })
         payment.insert(ignore_permissions=True)
         payment.submit()
-        self._log('create_payment', 'info', f'Created payment {payment.name}')
         return payment
 
     def _attempt_reconcile(self):
@@ -230,32 +287,6 @@ class FinapifyPaymentRequest(Document):
                 self.db_set('reconciliation_status', 'Reconciled')
             else:
                 self.db_set('reconciliation_status', 'Partial')
-            self._log('reconcile', 'info', f'Reconciliation status: {self.reconciliation_status}')
         except Exception as e:
             self.db_set('reconciliation_status', 'Partial')
             self.db_set('last_error', str(e))
-            self._log('reconcile', 'error', f'Reconcile failed: {e}')
-
-    def action_retry(self):
-        if self.status not in ('Failed', 'Processing'):
-            frappe.throw(_('Only Failed or Processing requests can be retried.'))
-        frappe.get_doc({
-            'doctype': 'Finapify Job',
-            'company': self.company,
-            'job_type': 'Retry Payment',
-            'ref_model': self.doctype,
-            'ref_id': self.name,
-            'run_at': frappe.utils.now(),
-        }).insert(ignore_permissions=True)
-        self._log('retry', 'info', 'Enqueued retry job')
-
-    def action_retry_reconcile(self):
-        frappe.get_doc({
-            'doctype': 'Finapify Job',
-            'company': self.company,
-            'job_type': 'Reconcile',
-            'ref_model': self.doctype,
-            'ref_id': self.name,
-            'run_at': frappe.utils.now(),
-        }).insert(ignore_permissions=True)
-        self._log('reconcile', 'info', 'Enqueued reconcile job')

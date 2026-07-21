@@ -96,6 +96,19 @@ def hmac_sha256_hex(secret: str, raw_body: bytes) -> str:
     return hmac.new(secret.encode('utf-8'), raw_body, hashlib.sha256).hexdigest()
 
 
+def get_finapify_secret(fieldname: str) -> str:
+    """Decrypt a Password-fieldtype value on the Finapify Settings single.
+
+    Plain attribute access (`doc.fieldname`) or `frappe.db.get_single_value`
+    returns the raw encrypted-at-rest value for Password fields, not the
+    usable secret — this must go through Frappe's password store.
+    """
+    from frappe.utils.password import get_decrypted_password
+    return get_decrypted_password(
+        'Finapify Settings', 'Finapify Settings', fieldname, raise_exception=False
+    ) or ''
+
+
 def ensure_requests_available():
     try:
         import requests  # noqa
@@ -123,8 +136,8 @@ def check_finapify_authenticated():
 
     if not is_authenticated:
         try:
-            api_key = frappe.db.get_single_value('Finapify Settings', 'api_key')
-            api_secret = frappe.db.get_single_value('Finapify Settings', 'api_secret')
+            api_key = get_finapify_secret('api_key')
+            api_secret = get_finapify_secret('api_secret')
         except Exception:
             api_key = None
             api_secret = None
@@ -147,7 +160,7 @@ def get_finapify_auth_status():
     try:
         return {
             'is_authenticated': frappe.db.get_single_value('Finapify Settings', 'is_authenticated') or False,
-            'api_key': frappe.db.get_single_value('Finapify Settings', 'api_key') or '',
+            'has_api_key': bool(frappe.db.get_single_value('Finapify Settings', 'api_key')),
             'api_url': frappe.db.get_single_value('Finapify Settings', 'api_url') or 'https://api.finapify.com/webhook/erpnext',
             'last_auth_at': frappe.db.get_single_value('Finapify Settings', 'last_auth_at') or '',
             'auth_error': frappe.db.get_single_value('Finapify Settings', 'auth_error') or '',

@@ -1,9 +1,15 @@
 import frappe
 from frappe import _
-from frappe.model.document import Document
+
+try:
+    from erpnext.buying.doctype.supplier.supplier import Supplier
+    _base = Supplier
+except ImportError:
+    from frappe.model.document import Document
+    _base = Document
 
 
-class FinapifySupplier(Document):
+class FinapifySupplier(_base):
     """Extends Supplier with Finapify vendor bank map helper."""
 
     def get_finapify_bank_map(self):

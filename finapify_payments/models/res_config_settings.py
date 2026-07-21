@@ -10,11 +10,12 @@ class FinapifySettings(Document):
         if not self.api_url:
             self.api_url = 'https://api.finapify.com/webhook/erpnext'
 
+    @frappe.whitelist()
     def test_finapify_authentication(self):
         import requests
 
-        api_key = self.api_key
-        api_secret = self.api_secret
+        api_key = self.get_password('api_key', raise_exception=False)
+        api_secret = self.get_password('api_secret', raise_exception=False)
         api_url = self.api_url or 'https://api.finapify.com/webhook/erpnext'
 
         if not api_key or not api_secret:
@@ -64,5 +65,5 @@ class FinapifySettings(Document):
             'is_authenticated': bool(self.is_authenticated),
             'last_auth_at': self.last_auth_at or '',
             'auth_error': self.auth_error or '',
-            'api_key': self.api_key or '',
+            'has_api_key': bool(self.get_password('api_key', raise_exception=False)),
         }

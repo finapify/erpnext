@@ -12,6 +12,7 @@ except ImportError:
 class FinapifyPurchaseInvoice(_base):
     """Extends Purchase Invoice with Finapify payment action."""
 
+    @frappe.whitelist()
     def action_finapify_pay(self):
         if self.doctype != 'Purchase Invoice':
             frappe.throw(_('Pay with Finapify is only available for vendor bills.'))

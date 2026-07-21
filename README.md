@@ -181,45 +181,60 @@ For more help, see [INSTALLATION.md](INSTALLATION.md) troubleshooting section.
 
 ### Project Structure
 
+This is a standard Frappe app: the repo root holds packaging files, and the
+importable Python package lives one level down in `finapify_payments/`.
+
 ```
-finapify_payments/
-├── __init__.py
-├── __manifest__.py (for Odoo - deprecated)
-├── hooks.py (Frappe configuration)
-├── setup.py (Installation/setup hooks)
-├── models/
-│   ├── __init__.py
-│   ├── utils.py (Helper functions)
-│   ├── finapify_connection.py
-│   ├── finapify_payment_request.py
-│   ├── finapify_payment_batch.py
-│   ├── finapify_log.py
-│   ├── account_move_inherit.py
-│   └── ...other models
-├── controllers/
-│   ├── __init__.py
-│   └── main.py (Webhook handlers)
-├── wizards/
-│   ├── __init__.py
-│   ├── finapify_connect_wizard.py
-│   └── ...other wizards
-├── views/
-│   ├── ...XML view definitions
-├── data/
-│   ├── finapify_sequences.xml
-│   └── finapify_cron.xml
-└── INSTALLATION.md
+finapify_payments/                  (repo root — bench clones this into apps/)
+├── setup.py (Python packaging — pip/setuptools)
+├── requirements.txt
+└── finapify_payments/              (the actual app package Frappe imports)
+    ├── __init__.py
+    ├── hooks.py (Frappe configuration)
+    ├── modules.txt (registers the "Finapify Payments" module)
+    ├── setup.py (after_install hook, test_finapify_connection)
+    ├── models/
+    │   ├── __init__.py
+    │   ├── utils.py (Helper functions)
+    │   ├── finapify_connection.py
+    │   ├── finapify_payment_request.py
+    │   ├── finapify_payment_batch.py
+    │   ├── finapify_log.py
+    │   ├── account_move_inherit.py (Purchase Invoice override)
+    │   ├── purchase_order_inherit.py (Purchase Order override)
+    │   ├── res_partner_inherit.py (Supplier override)
+    │   └── ...other models
+    ├── controllers/
+    │   ├── __init__.py
+    │   └── main.py (webhook callback + whitelisted API methods)
+    ├── wizards/
+    │   ├── __init__.py
+    │   ├── finapify_connect_wizard.py
+    │   └── ...other wizards
+    ├── doctype/
+    │   └── <doctype_name>/<doctype_name>.json + .py  (one folder per DocType)
+    ├── fixtures/
+    │   └── module_def.json
+    └── workspace/
+        └── finapify_payments.json
 ```
 
 ### Running Tests
 
 ```bash
-# Execute a setup test
+# Execute a setup sanity check
 bench --site <site> execute finapify_payments.setup.test_finapify_connection
 
 # View logs
 bench --site <site> tail -f
 ```
+
+Note: this app does not yet ship desk client scripts (JS) for the "Pay with
+Finapify" buttons on Purchase Invoice/Purchase Order, or a dashboard page.
+The whitelisted document methods (`action_finapify_pay`,
+`action_submit_to_n8n`, etc.) and API endpoints are fully wired up
+server-side and can be called directly via `frappe.call`/REST today; adding
+the corresponding buttons/pages is tracked as follow-up UI work.
 
 ## Contributing
 
@@ -239,13 +254,12 @@ Contributions are welcome! Please:
 
 ## License
 
-This project is licensed under the LGPL-3.0 License - see LICENSE file for details.
+This project is licensed under the LGPL-3.0 License.
 
 ## Changelog
 
-### v16.0.1.0.0 (2026-05-07)
-- Initial release for ERPNext v16
-- Converted from Odoo to Frappe framework
+### v0.1.0
+- Pure Frappe/ERPNext implementation (no Odoo dependencies)
 - Full support for single and batch payments
 - HMAC callback verification
 - Auto-reconciliation

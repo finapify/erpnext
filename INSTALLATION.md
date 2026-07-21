@@ -35,24 +35,24 @@ bench install-app finapify_payments
 bench --site site1.local install-app finapify_payments
 ```
 
-### 3. Create Doctypes
+### 3. Doctypes
 
-After installation, create the following doctypes through the ERPNext web UI or by running:
+All doctypes ship as JSON definitions under `finapify_payments/doctype/` and
+are created automatically during `bench --site <site> migrate` (which
+`install-app` runs for you). No manual doctype creation step is needed.
 
-```bash
-bench execute finapify_payments.setup.create_doctypes
-```
-
-### Required Doctypes
+### Doctypes Included
 
 1. **Finapify Connection** - Stores Finapify API connection details
 2. **Finapify Payment Request** - Individual payment request records
 3. **Finapify Payment Batch** - Batch payment requests
 4. **Finapify Log** - Audit logs for all transactions
-5. **Finapify Settings** - Module configuration
+5. **Finapify Settings** - Module configuration (Single)
 6. **Finapify Bank Statement** - Bank statement imports
 7. **Finapify Vendor Bank Map** - Vendor-to-bank mapping
 8. **Finapify Journal Map** - Journal mapping configuration
+9. **Finapify Job** - Background retry/reconcile queue
+10. **Finapify Txn** - Idempotency ledger of applied Finapify references
 
 ### 4. Configure Module
 
@@ -222,10 +222,10 @@ For local development:
 cd ~/frappe-bench
 
 # Make changes to the code
-# vim apps/finapify_payments/models/...
+# vim apps/finapify_payments/finapify_payments/models/...
 
 # Test your changes
-bench --site site1.local execute finapify_payments.setup.test_setup
+bench --site site1.local execute finapify_payments.setup.test_finapify_connection
 
 # Clear cache and restart
 bench --site site1.local clear-cache
