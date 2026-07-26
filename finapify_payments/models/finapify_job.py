@@ -43,7 +43,7 @@ class FinapifyJob(Document):
         if self.job_type == 'Retry Payment':
             if hasattr(rec, '_log'):
                 rec._log('retry', 'warn', 'Automatic retry requires OTP. Please retry from UI.')
-            return
+            raise Exception('Automatic retry requires OTP; please retry from the UI.')
 
 
 # --- Scheduled task functions referenced in hooks.py ---

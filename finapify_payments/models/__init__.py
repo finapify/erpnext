@@ -10,6 +10,6 @@ from . import finapify_journal_map
 from . import finapify_dashboard
 from . import finapify_job
 from . import res_config_settings
-from . import account_move_inherit
-from . import purchase_order_inherit
-from . import res_partner_inherit
+from . import purchase_invoice_override
+from . import purchase_order_override
+from . import supplier_override

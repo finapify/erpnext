@@ -37,7 +37,7 @@ bench --site site1.local install-app finapify_payments
 
 ### 3. Doctypes
 
-All doctypes ship as JSON definitions under `finapify_payments/doctype/` and
+All doctypes ship as JSON definitions under `finapify_payments/finapify_payments/doctype/` and
 are created automatically during `bench --site <site> migrate` (which
 `install-app` runs for you). No manual doctype creation step is needed.
 

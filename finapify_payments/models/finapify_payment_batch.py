@@ -177,9 +177,9 @@ class FinapifyPaymentBatch(Document):
             if ln.status == 'Success':
                 ln._attempt_reconcile()
 
-        all_reconciled = all(
-            ln.reconciliation_status == 'Reconciled'
-            for ln in self.line_ids if ln.status == 'Success'
+        success_lines = [ln for ln in self.line_ids if ln.status == 'Success']
+        all_reconciled = bool(success_lines) and all(
+            ln.reconciliation_status == 'Reconciled' for ln in success_lines
         )
         any_partial = any(
             ln.reconciliation_status in ('Partial', 'Reconciled')

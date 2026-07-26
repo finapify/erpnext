@@ -200,9 +200,9 @@ finapify_payments/                  (repo root — bench clones this into apps/)
     │   ├── finapify_payment_request.py
     │   ├── finapify_payment_batch.py
     │   ├── finapify_log.py
-    │   ├── account_move_inherit.py (Purchase Invoice override)
-    │   ├── purchase_order_inherit.py (Purchase Order override)
-    │   ├── res_partner_inherit.py (Supplier override)
+    │   ├── purchase_invoice_override.py (Purchase Invoice override)
+    │   ├── purchase_order_override.py (Purchase Order override)
+    │   ├── supplier_override.py (Supplier override)
     │   └── ...other models
     ├── controllers/
     │   ├── __init__.py
@@ -211,12 +211,18 @@ finapify_payments/                  (repo root — bench clones this into apps/)
     │   ├── __init__.py
     │   ├── finapify_connect_wizard.py
     │   └── ...other wizards
-    ├── doctype/
-    │   └── <doctype_name>/<doctype_name>.json + .py  (one folder per DocType)
+    ├── public/js/
+    │   ├── purchase_invoice.js ("Pay with Finapify" button)
+    │   └── purchase_invoice_list.js (bulk "Pay with Finapify" list action)
     ├── fixtures/
     │   └── module_def.json
-    └── workspace/
-        └── finapify_payments.json
+    └── finapify_payments/           (the "Finapify Payments" module — Frappe
+                                       needs this extra nesting level since the
+                                       module name matches the app name)
+        ├── doctype/
+        │   └── <doctype_name>/<doctype_name>.json + .py + .js  (one folder per DocType)
+        └── workspace/
+            └── finapify_payments/finapify_payments.json
 ```
 
 ### Running Tests
@@ -228,9 +234,6 @@ bench --site <site> execute finapify_payments.setup.test_finapify_connection
 # View logs
 bench --site <site> tail -f
 ```
-
-Note: this app does not yet ship desk client scripts (JS) for the "Pay with
-Finapify" buttons on Purchase Invoice/Purchase Order, or a dashboard page.
 The whitelisted document methods (`action_finapify_pay`,
 `action_submit_to_n8n`, etc.) and API endpoints are fully wired up
 server-side and can be called directly via `frappe.call`/REST today; adding

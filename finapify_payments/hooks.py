@@ -13,14 +13,19 @@ after_install = "finapify_payments.setup.after_install"
 
 # Override ERPNext DocType controllers to add Finapify actions
 override_doctype_class = {
-    "Purchase Invoice": "finapify_payments.models.account_move_inherit.FinapifyPurchaseInvoice",
-    "Purchase Order": "finapify_payments.models.purchase_order_inherit.FinapifyPurchaseOrder",
-    "Supplier": "finapify_payments.models.res_partner_inherit.FinapifySupplier",
+    "Purchase Invoice": "finapify_payments.models.purchase_invoice_override.FinapifyPurchaseInvoice",
+    "Purchase Order": "finapify_payments.models.purchase_order_override.FinapifyPurchaseOrder",
+    "Supplier": "finapify_payments.models.supplier_override.FinapifySupplier",
 }
 
 # Client-side scripts injected into standard ERPNext doctype forms
 doctype_js = {
     "Purchase Invoice": "public/js/purchase_invoice.js",
+}
+
+# Client-side scripts injected into standard ERPNext list views
+doctype_list_js = {
+    "Purchase Invoice": "public/js/purchase_invoice_list.js",
 }
 
 # Scheduled Tasks

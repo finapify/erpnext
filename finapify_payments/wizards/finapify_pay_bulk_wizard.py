@@ -3,6 +3,24 @@ from frappe import _
 from frappe.model.document import Document
 
 
+@frappe.whitelist()
+def create_bulk_pay_wizard(bill_names):
+    """Create a Finapify Pay Bulk Wizard pre-filled from selected Purchase Invoices.
+
+    Called from the Purchase Invoice list view bulk action; frappe.flags.active_ids
+    is only readable within this same request, so the wizard doc must be created here.
+    """
+    if isinstance(bill_names, str):
+        bill_names = frappe.parse_json(bill_names)
+    if not bill_names:
+        frappe.throw(_('Select at least one vendor bill.'))
+
+    frappe.flags.active_ids = bill_names
+    doc = frappe.new_doc('Finapify Pay Bulk Wizard')
+    doc.insert(ignore_permissions=True)
+    return doc.name
+
+
 class FinapifyPayBulkWizard(Document):
 
     def before_insert(self):
@@ -39,6 +57,10 @@ class FinapifyPayBulkWizard(Document):
         companies = {b.company for b in bills}
         if len(companies) > 1:
             frappe.throw(_('All selected bills must belong to the same company.'))
+
+        currencies = {b.currency for b in bills}
+        if len(currencies) > 1:
+            frappe.throw(_('All selected bills must be in the same currency.'))
 
         for b in bills:
             if b.docstatus != 1:
